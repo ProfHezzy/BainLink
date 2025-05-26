@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block title %}Notifications - BrainLink{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">Your Notifications</h4>
+                        <span class="badge bg-primary">
+                            {{ unread_count }} unread
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for notification in notifications %}
+                            <a href="{% url 'view_notification' notification.id %}" 
+                               class="list-group-item list-group-item-action {% if not notification.is_read %}list-group-item-primary{% endif %}">
+                                <div class="d-flex align-items-center">
+                                    {% if notification.sender.profile.profile_pic %}
+                                        <img src="{{ notification.sender.profile.profile_pic.url }}" 
+                                             class="rounded-circle me-3" width="40" height="40">
+                                    {% else %}
+                                        <div class="rounded-circle bg-light me-3" style="width:40px;height:40px;"></div>
+                                    {% endif %}
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between">
+                                            <h6 class="mb-1">{{ notification.message }}</h6>
+                                            <small class="text-muted">{{ notification.created_at|timesince }} ago</small>
+                                        </div>
+                                        {% if notification.notification_type == 'connection_request' %}
+                                            <div class="mt-2">
+                                                <a href="{% url 'accept_connection_request' notification.related_object_id %}" 
+                                                   class="btn btn-sm btn-success me-2">
+                                                    Accept
+                                                </a>
+                                                <a href="{% url 'reject_connection_request' notification.related_object_id %}" 
+                                                   class="btn btn-sm btn-outline-danger">
+                                                    Decline
+                                                </a>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </a>
+                        {% empty %}
+                            <div class="p-4 text-center text-muted">
+                                <i class="bi bi-bell-slash fs-1"></i>
+                                <p class="mt-2">No notifications yet</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% if is_paginated %}
+                <div class="card-footer bg-white">
+                    <nav aria-label="Notifications pagination">
+                        <ul class="pagination justify-content-center mb-0">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

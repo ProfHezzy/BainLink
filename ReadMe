@@ -1,0 +1,31 @@
+Username : ProfHezzy
+Pass : profhezzy@123
+
+from django.utils import timezone
+from core.models import User, Profile  # assuming your app is 'accounts'
+from core.models import Subject
+
+# First, create some Subjects for linking
+subject_python = Subject.objects.create(name='Python')
+subject_datasci = Subject.objects.create(name='Data Science')
+
+# Create Users
+user1 = User.objects.create_user(username='hezzy', email='hezzy@example.com', password='testpass123', role='student', is_verified=True)
+user2 = User.objects.create_user(username='david', email='david@example.com', password='testpass123', role='mentor', is_verified=True)
+user3 = User.objects.create_user(username='jane', email='jane@example.com', password='testpass123', role='recruiter')
+user4 = User.objects.create_user(username='amaka', email='amaka@example.com', password='testpass123', role='sponsor')
+
+# Create Profiles
+Profile.objects.create(user=user1, bio="Aspiring Data Scientist passionate about AI.", education_level='undergrad', institution='UNILAG', graduation_year=2025, location='Lagos', website='https://hezzy.dev', linkedin='https://linkedin.com/in/hezzy', github='https://github.com/hezzy', points=120, skills='Python, Data Analysis, Machine Learning')
+Profile.objects.create(user=user2, bio="Experienced mentor in software engineering.", education_level='professional', institution='Microsoft Certified', graduation_year=2019, location='Abuja', points=320, skills='Python, Django, DevOps')
+Profile.objects.create(user=user3, bio="Tech Recruiter connecting top talents.", education_level='masters', institution='Harvard', graduation_year=2020, location='London', points=250)
+Profile.objects.create(user=user4, bio="Investor and tech sponsor", education_level='phd', institution='Oxford', graduation_year=2015, location='New York', points=500)
+
+# Assign Subjects to Profiles
+profile1 = Profile.objects.get(user=user1)
+profile1.subjects.add(subject_python, subject_datasci)
+profile1.save()
+
+profile2 = Profile.objects.get(user=user2)
+profile2.subjects.add(subject_python)
+profile2.save()

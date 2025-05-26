@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}Connection Request - BrainLink{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">Connection Request</h4>
+                </div>
+                <div class="card-body text-center">
+                    {% if connection_request.sender.profile.profile_pic %}
+                        <img src="{{ connection_request.sender.profile.profile_pic.url }}" 
+                             class="rounded-circle mb-3" width="100" height="100">
+                    {% else %}
+                        <div class="rounded-circle bg-light mb-3 mx-auto" style="width:100px;height:100px;"></div>
+                    {% endif %}
+                    
+                    <h5>{{ connection_request.sender.username }}</h5>
+                    <p class="text-muted">wants to connect with you</p>
+                    <p class="text-muted small mb-4">
+                        Sent {{ connection_request.created_at|timesince }} ago
+                    </p>
+                    
+                    <div class="d-flex justify-content-center gap-3">
+                        <form method="post" action="{% url 'accept_connection_request' connection_request.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success px-4">
+                                <i class="bi bi-check-circle me-2"></i> Accept
+                            </button>
+                        </form>
+                        
+                        <form method="post" action="{% url 'reject_connection_request' connection_request.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger px-4">
+                                <i class="bi bi-x-circle me-2"></i> Decline
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-3">
+                <a href="{% url 'profile' connection_request.sender.username %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-person me-2"></i> View Profile
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

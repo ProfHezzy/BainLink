@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}System Settings{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2><i class="bi bi-gear"></i> System Settings</h2>
+    
+    <div class="card mt-4">
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label class="form-label">Site Name</label>
+                    {{ form.site_name }}
+                </div>
+                
+                <div class="mb-3 form-check form-switch">
+                    {{ form.maintenance_mode }}
+                    <label class="form-check-label">Maintenance Mode</label>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Site Logo</label>
+                    {{ form.logo }}
+                </div>
+                
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save"></i> Save Settings
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

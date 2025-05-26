@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <!-- Card Header -->
+                <div class="card-header bg-white py-3 border-bottom">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold">Edit Profile</h5>
+                        <a href="{% url 'profile' request.user.username %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-x-lg"></i> Cancel
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Card Body -->
+                <div class="card-body p-4">
+                    <form method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- Profile Picture Section -->
+                        <div class="text-center mb-4">
+                            <div class="position-relative d-inline-block">
+                                <img id="profile-pic-preview" 
+                                     src="{% if form.instance.profile_pic %}{{ form.instance.profile_pic.url }}{% else %}{% static 'images/default-profile.jpg' %}{% endif %}" 
+                                     class="rounded-circle border object-fit-cover" 
+                                     width="120" 
+                                     height="120"
+                                     alt="Profile picture">
+                                <label for="id_profile_pic" class="btn btn-sm btn-primary rounded-circle position-absolute" 
+                                       style="bottom: 5px; right: 5px; width: 36px; height: 36px; line-height: 36px;">
+                                    <i class="bi bi-camera-fill fs-6"></i>
+                                </label>
+                                <input type="file" 
+                                       name="profile_pic" 
+                                       id="id_profile_pic" 
+                                       class="d-none" 
+                                       accept="image/*">
+                            </div>
+                            {% if form.profile_pic.errors %}
+                                <div class="text-danger small mt-2">{{ form.profile_pic.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Main Form Fields -->
+                        <div class="row g-3">
+                            <!-- Left Column -->
+                            <div class="col-md-6">
+                                <!-- First Name -->
+                                <div class="mb-3">
+                                    <label for="id_first_name" class="form-label">First Name</label>
+                                    {{ form.first_name }}
+                                    {% if form.first_name.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.first_name.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Last Name -->
+                                <div class="mb-3">
+                                    <label for="id_last_name" class="form-label">Last Name</label>
+                                    {{ form.last_name }}
+                                    {% if form.last_name.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.last_name.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Location -->
+                                <div class="mb-3">
+                                    <label for="id_location" class="form-label">Location</label>
+                                    {{ form.location }}
+                                    {% if form.location.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.location.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- Right Column -->
+                            <div class="col-md-6">
+                                <!-- Bio -->
+                                <div class="mb-3">
+                                    <label for="id_bio" class="form-label">Bio</label>
+                                    {{ form.bio }}
+                                    <small class="text-muted">Tell others about yourself (max 250 chars)</small>
+                                    {% if form.bio.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.bio.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Website -->
+                                <div class="mb-3">
+                                    <label for="id_website" class="form-label">Website</label>
+                                    {{ form.website }}
+                                    {% if form.website.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.website.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Birth Date -->
+                                <div class="mb-3">
+                                    <label for="id_birth_date" class="form-label">Birth Date</label>
+                                    {{ form.birth_date }}
+                                    {% if form.birth_date.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.birth_date.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Privacy Settings -->
+                        <div class="border-top pt-3 mt-3">
+                            <h6 class="fw-bold mb-3">Privacy Settings</h6>
+                            <div class="form-check form-switch mb-2">
+                                {{ form.show_email }}
+                                <label class="form-check-label" for="id_show_email">Show email address on profile</label>
+                            </div>
+                            <div class="form-check form-switch mb-2">
+                                {{ form.show_birth_date }}
+                                <label class="form-check-label" for="id_show_birth_date">Show birth date on profile</label>
+                            </div>
+                        </div>
+                        
+                        <!-- Submit Button -->
+                        <div class="d-flex justify-content-end mt-4">
+                            <button type="submit" class="btn btn-primary px-4 py-2">
+                                <i class="bi bi-save me-2"></i>Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for Image Preview -->
+<script>
+document.getElementById('id_profile_pic').addEventListener('change', function(event) {
+    const [file] = event.target.files;
+    if (file) {
+        const preview = document.getElementById('profile-pic-preview');
+        preview.src = URL.createObjectURL(file);
+        preview.onload = function() {
+            URL.revokeObjectURL(preview.src);
+        }
+    }
+});
+</script>
+
+<style>
+/* Custom Styles */
+.object-fit-cover {
+    object-fit: cover;
+}
+
+.card {
+    border-radius: 0.75rem;
+}
+
+.form-control, .form-select {
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid #dee2e6;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.form-label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.invalid-feedback {
+    font-size: 0.85rem;
+}
+
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.btn-primary {
+    border-radius: 0.5rem;
+    font-weight: 500;
+}
+</style>
+{% endblock %}
