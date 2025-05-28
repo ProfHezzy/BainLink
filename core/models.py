@@ -371,7 +371,7 @@ class Message(models.Model):
         if self.file_name:
             # Shorten content for notification if both content and file exist
             display_content = self.content[:20] + '...' if self.content else ''
-            notification_message += f"{f': \"{display_content}\"' if display_content else ''} (with attachment: {self.file_name})"
+            notification_message += f"{': "' + display_content + '"' if display_content else ''} (with attachment: {self.file_name})"
         elif not self.content: # If only a file, and no explicit content
              notification_message = f"New file from {self.sender.username} ({self.file_name})"
 
