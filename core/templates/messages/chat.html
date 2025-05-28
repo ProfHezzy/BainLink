@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="chat-container">
+    <div class="chat-header">
+        <a href="{% url 'message_list_view' %}" class="back-link" title="Back to Messages">
+            <i class="bi bi-arrow-left-short"></i>
+        </a>
+        <div class="user-info">
+            {# Use profile_user here, as this is the person you are chatting with #}
+            {% if profile_user.profile.profile_pic %}
+                <img src="{{ profile_user.profile.profile_pic.url }}" 
+                     alt="{{ profile_user.username }}'s profile" 
+                     class="user-avatar">
+            {% else %}
+                <img src="{% static 'images/default-profile.jpg' %}" 
+                     alt="Default profile" 
+                     class="user-avatar">
+            {% endif %}
+            <div>
+                {# Display profile_user's full name or username #}
+                <h5 class="user-name">{{ profile_user.get_full_name|default:profile_user.username }}</h5>
+                <small class="status">Online</small> {# This would need dynamic update via JS/backend #}
+            </div>
+        </div>
+        <div class="chat-actions">
+            <button class="btn-icon" title="Search">
+                <i class="bi bi-search"></i>
+            </button>
+            <button class="btn-icon" title="More options">
+                <i class="bi bi-three-dots-vertical"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="chat-messages" id="chatMessages">
+        <div class="messages-loading text-center text-muted">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading messages...</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="attachment-preview" id="attachmentPreview" style="display: none;">
+        </div>
+
+    <div class="message-input-area">
+        <input type="file" id="attachmentInput" style="display: none;"> 
+        <button class="btn-icon" title="Attach file" id="attachFileBtn">
+            <i class="bi bi-paperclip"></i>
+        </button>
+        <textarea class="message-textarea" id="messageInput" placeholder="Type a message..." rows="1" autocomplete="off"></textarea>
+        <button class="send-button" id="sendMessageBtn" title="Send"> <i class="bi bi-send-fill"></i>
+        </button>
+    </div>
+</div>
+
+{# Hidden inputs to pass data to JavaScript #}
+<input type="hidden" id="currentUsername" value="{{ request.user.username }}">
+<input type="hidden" id="recipientUsername" value="{{ profile_user.username }}"> {# Ensure this is profile_user.username #}
+<input type="hidden" id="csrfToken" value="{{ csrf_token }}">
+
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/chat.css' %}">
+{% endblock %}
+
+{% block extra_js %}
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'js/chat.js' %}"></script>
+{% endblock %}

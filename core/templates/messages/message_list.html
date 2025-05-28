@@ -1,0 +1,44 @@
+<!-- templates/messages/list.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Conversations</h4>
+                </div>
+                <div class="card-body">
+                    {% for notif in unread_notifications %}
+                    <div class="alert alert-info">
+                        <a href="{% url 'view_notification' notif.id %}">
+                            {{ notif.message }}
+                            <small class="text-muted">{{ notif.created_at|timesince }} ago</small>
+                        </a>
+                    </div>
+                    {% empty %}
+                    <p>No unread messages</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <!-- Existing message list content -->
+             <h2>Your Messages</h2>
+            <ul>
+                {% for message in messages %}
+                    <li>
+                        <a href="{% url 'message_detail' message.id %}">
+                            From: {{ message.sender.username }} - {{ message.content|truncatewords:10 }}
+                            {% if not message.read %}<strong>(New)</strong>{% endif %}
+                        </a>
+                    </li>
+                {% empty %}
+                    <li>No messages found.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">About {{ profile_user.username }}</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <!-- Overview -->
+                            <div class="mb-5">
+                                <h5 class="mb-3"><i class="bi bi-info-circle me-2"></i> Overview</h5>
+                                <div class="about-item">
+                                    <h6>Current Role</h6>
+                                    <p>{{ profile_user.profile.current_role|default:"Not specified" }}</p>
+                                </div>
+                                <div class="about-item">
+                                    <h6>Location</h6>
+                                    <p>{{ profile_user.profile.location|default:"Not specified" }}</p>
+                                </div>
+                                <div class="about-item">
+                                    <h6>Joined</h6>
+                                    <p>{{ profile_user.date_joined|date:"F Y" }}</p>
+                                </div>
+                            </div>
+
+                            <!-- Skills -->
+                            <div class="mb-5">
+                                <h5 class="mb-3"><i class="bi bi-award me-2"></i> Skills</h5>
+                                {% if skills %}
+                                <div class="skills-container">
+                                    {% for skill in skills %}
+                                    <span class="skill-badge">{{ skill.name }}</span>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <p class="text-muted">No skills added yet</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <!-- Experience -->
+                            <div class="mb-5">
+                                <h5 class="mb-3"><i class="bi bi-briefcase me-2"></i> Experience</h5>
+                                {% if experiences %}
+                                <div class="timeline">
+                                    {% for exp in experiences %}
+                                    <div class="timeline-item">
+                                        <div class="timeline-badge"></div>
+                                        <div class="timeline-content">
+                                            <h6>{{ exp.position }}</h6>
+                                            <p class="text-muted">{{ exp.company }}</p>
+                                            <small class="text-muted">
+                                                {{ exp.start_date|date:"M Y" }} - 
+                                                {% if exp.current %}Present{% else %}{{ exp.end_date|date:"M Y" }}{% endif %}
+                                            </small>
+                                            {% if exp.description %}
+                                            <p class="mt-2">{{ exp.description }}</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <p class="text-muted">No experience added yet</p>
+                                {% endif %}
+                            </div>
+
+                            <!-- Education -->
+                            <div class="mb-5">
+                                <h5 class="mb-3"><i class="bi bi-mortarboard me-2"></i> Education</h5>
+                                {% if educations %}
+                                <div class="timeline">
+                                    {% for edu in educations %}
+                                    <div class="timeline-item">
+                                        <div class="timeline-badge"></div>
+                                        <div class="timeline-content">
+                                            <h6>{{ edu.degree }}</h6>
+                                            <p class="text-muted">{{ edu.institution }}</p>
+                                            <small class="text-muted">
+                                                {{ edu.start_date|date:"M Y" }} - 
+                                                {% if edu.current %}Present{% else %}{{ edu.end_date|date:"M Y" }}{% endif %}
+                                            </small>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <p class="text-muted">No education added yet</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

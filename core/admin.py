@@ -1,82 +1,105 @@
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin
-from django.contrib.auth.forms import UserChangeForm, UserCreationForm
-from .models import User, Profile, Subject, Post, Challenge, Opportunity
+from django.contrib.contenttypes.admin import GenericTabularInline
+from .models import (
+    User, Profile, Subject, Connection, ConnectionRequest,
+    Notification, Post, Comment, Message, Project,
+    Experience, Education, Skill, Challenge,
+    Opportunity, Badge, UserBadge, Submission
+)
 
-# Custom forms to handle the role field
-class CustomUserChangeForm(UserChangeForm):
-    class Meta(UserChangeForm.Meta):
-        model = User
-
-class CustomUserCreationForm(UserCreationForm):
-    class Meta(UserCreationForm.Meta):
-        model = User
-        fields = ('username', 'email', 'role')  # Include role field
-
-# Custom User Admin
-class CustomUserAdmin(UserAdmin):
-    form = CustomUserChangeForm
-    add_form = CustomUserCreationForm
-    
-    list_display = ('username', 'email', 'role', 'is_staff')
-    list_filter = ('role', 'is_staff', 'is_superuser')
+# Customize the User admin
+class UserAdmin(admin.ModelAdmin):
+    list_display = ('username', 'email', 'role', 'is_verified', 'is_staff')
+    list_filter = ('role', 'is_verified', 'is_staff')
+    search_fields = ('username', 'email')
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
-        ('Personal Info', {'fields': ('first_name', 'last_name', 'email', 'phone')}),
-        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+        ('Personal Info', {'fields': ('email', 'phone')}),
+        ('Permissions', {'fields': ('role', 'is_verified', 'is_active', 'is_staff', 'is_superuser')}),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
-        ('Role', {'fields': ('role',)}),  # Add role field to admin
-    )
-    add_fieldsets = (
-        (None, {
-            'classes': ('wide',),
-            'fields': ('username', 'email', 'role', 'password1', 'password2'),
-        }),
     )
 
-# Profile Admin (inline with User)
-class ProfileInline(admin.StackedInline):
-    model = Profile
-    can_delete = False
-    verbose_name_plural = 'Profile'
-    fk_name = 'user'
+# Profile admin with user link
+class ProfileAdmin(admin.ModelAdmin):
+    list_display = ('user', 'headline', 'education_level', 'points')
+    list_filter = ('education_level',)
+    search_fields = ('user__username', 'headline', 'bio')
+    raw_id_fields = ('user',)
 
-# Extend CustomUserAdmin with ProfileInline
-class CompleteUserAdmin(CustomUserAdmin):
-    inlines = (ProfileInline,)
-    
-    def get_inline_instances(self, request, obj=None):
-        if not obj:
-            return list()
-        return super().get_inline_instances(request, obj)
+# Notification admin with content object link
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ('recipient', 'sender', 'notification_type', 'read', 'created_at')
+    list_filter = ('notification_type', 'read')
+    search_fields = ('recipient__username', 'sender__username', 'message')
+    date_hierarchy = 'created_at'
 
-# Other Model Admins
-class SubjectAdmin(admin.ModelAdmin):
-    list_display = ('name', 'parent')
-    search_fields = ('name',)
-    prepopulated_fields = {'slug': ('name',)}  # Add slug field to your model if needed
+# Message admin with conversation view
+class MessageAdmin(admin.ModelAdmin):
+    list_display = ('sender', 'recipient', 'timestamp', 'read')
+    list_filter = ('read', 'timestamp')
+    search_fields = ('sender__username', 'recipient__username', 'content')
+    date_hierarchy = 'timestamp'
 
+# Project admin
+class ProjectAdmin(admin.ModelAdmin):
+    list_display = ('user', 'title', 'date')
+    search_fields = ('user__username', 'title', 'description')
+    list_filter = ('date',)
+    date_hierarchy = 'created_at'
+
+# Connection admin
+class ConnectionAdmin(admin.ModelAdmin):
+    list_display = ('creator', 'friend', 'created', 'accepted')
+    list_filter = ('accepted', 'created')
+    search_fields = ('creator__user__username', 'friend__user__username')
+
+# Post admin with rich content display
 class PostAdmin(admin.ModelAdmin):
-    list_display = ('title', 'author', 'subject', 'created_at')
-    list_filter = ('subject', 'created_at')
-    search_fields = ('title', 'content')
+    list_display = ('author', 'title', 'content_type', 'created_at')
+    list_filter = ('content_type', 'is_featured', 'is_approved')
+    search_fields = ('author__user__username', 'title', 'content')
+    date_hierarchy = 'created_at'
+    readonly_fields = ('like_count',)
 
+    def like_count(self, obj):
+        return obj.likes.count()
+    like_count.short_description = 'Likes'
+
+# Inline for skills
+'''class SkillInline(admin.TabularInline):
+    model = Skill
+    extra = 1'''
+
+# Experience admin
+class ExperienceAdmin(admin.ModelAdmin):
+    list_display = ('profile', 'position', 'company', 'start_date', 'current')
+    list_filter = ('current', 'start_date')
+    search_fields = ('profile__user__username', 'position', 'company')
+    #inlines = [SkillInline]
+
+# Challenge admin
 class ChallengeAdmin(admin.ModelAdmin):
-    list_display = ('title', 'subject', 'start_date', 'end_date', 'is_active')
-    list_filter = ('subject', 'difficulty', 'is_active')
+    list_display = ('title', 'subject', 'difficulty', 'start_date', 'end_date', 'is_active')
+    list_filter = ('difficulty', 'is_active', 'subject')
+    search_fields = ('title', 'description', 'sponsor__username')
+    date_hierarchy = 'start_date'
 
-class OpportunityAdmin(admin.ModelAdmin):
-    list_display = ('title', 'opportunity_type', 'deadline', 'is_active')
-    list_filter = ('opportunity_type', 'subject', 'is_active')
-
-# Register your models here
-admin.site.register(User, CompleteUserAdmin)
-admin.site.register(Subject, SubjectAdmin)
+# Register all models
+admin.site.register(User, UserAdmin)
+admin.site.register(Profile, ProfileAdmin)
+admin.site.register(Subject)
+admin.site.register(Connection, ConnectionAdmin)
+admin.site.register(ConnectionRequest)
+admin.site.register(Notification, NotificationAdmin)
 admin.site.register(Post, PostAdmin)
+admin.site.register(Comment)
+admin.site.register(Message, MessageAdmin)
+admin.site.register(Project, ProjectAdmin)
+admin.site.register(Experience, ExperienceAdmin)
+admin.site.register(Education)
+admin.site.register(Skill)
 admin.site.register(Challenge, ChallengeAdmin)
-admin.site.register(Opportunity, OpportunityAdmin)
-
-# Customize Admin Site
-admin.site.site_header = "BrainProject Administration"
-admin.site.site_title = "BrainProject Admin Portal"
-admin.site.index_title = "Welcome to BrainProject Admin"
+admin.site.register(Opportunity)
+admin.site.register(Badge)
+admin.site.register(UserBadge)
+admin.site.register(Submission)

@@ -1,0 +1,110 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/home.css' %}">
+<!-- Create Post Modal -->
+<div class="modal fade" id="createPostModal" tabindex="-1" aria-labelledby="createPostModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createPostModalLabel">Create Post</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="postForm" method="post" enctype="multipart/form-data" action="{% url 'create_post_view' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="d-flex align-items-center mb-3">
+                        {% if user.profile.profile_pic %}
+                            <img src="{{ user.profile.profile_pic.url }}" class="rounded-circle me-3 profile-pic-md">
+                        {% else %}
+                            <img src="{% static 'images/default-profile.jpg' %}" class="rounded-circle me-3 profile-pic-md">
+                        {% endif %}
+                        <div>
+                            <h6 class="mb-0">{{ user.get_full_name|default:user.username }}</h6>
+                            <div class="privacy-selector">
+                                <select class="form-select form-select-sm" name="privacy">
+                                    <option value="public"><i class="bi bi-globe"></i> Public</option>
+                                    <option value="connections">Connections Only</option>
+                                    <option value="private">Private</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <textarea class="form-control post-content" name="content" rows="5" placeholder="What's on your mind?" required></textarea>
+                    </div>
+                    
+                    <!-- Media Preview -->
+                    <div id="mediaPreview" class="mb-3 d-none">
+                        <div class="card">
+                            <div class="card-body p-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span id="fileName"></span>
+                                    <button type="button" class="btn-close" id="removeMedia"></button>
+                                </div>
+                                <div id="previewContainer" class="mt-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Post Options -->
+                    <div class="d-flex justify-content-between mb-3">
+                        <div class="d-flex flex-wrap">
+                            <label class="btn btn-sm btn-outline-secondary me-2 mb-2">
+                                <i class="bi bi-image"></i> Photo
+                                <input type="file" name="image" accept="image/*" class="d-none" id="imageUpload">
+                            </label>
+                            <label class="btn btn-sm btn-outline-secondary me-2 mb-2">
+                                <i class="bi bi-camera-video"></i> Video
+                                <input type="file" name="video" accept="video/*" class="d-none" id="videoUpload">
+                            </label>
+                            <label class="btn btn-sm btn-outline-secondary me-2 mb-2">
+                                <i class="bi bi-file-earmark-text"></i> Document
+                                <input type="file" name="document" accept=".pdf,.doc,.docx,.ppt,.pptx" class="d-none" id="documentUpload">
+                            </label>
+                            <button type="button" class="btn btn-sm btn-outline-secondary me-2 mb-2" id="addPollBtn">
+                                <i class="bi bi-bar-chart"></i> Poll
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary mb-2" id="addLinkBtn">
+                                <i class="bi bi-link-45deg"></i> Link
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Poll Container (Hidden by default) -->
+                    <div id="pollContainer" class="mb-3 d-none">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <input type="text" class="form-control mb-2" name="poll_question" placeholder="Ask a question">
+                                    <div id="pollOptions">
+                                        <input type="text" class="form-control mb-2" name="poll_option1" placeholder="Option 1">
+                                        <input type="text" class="form-control mb-2" name="poll_option2" placeholder="Option 2">
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" id="addPollOption">Add Option</button>
+                                    <div class="form-check mt-2">
+                                        <input class="form-check-input" type="checkbox" name="poll_multiple" id="pollMultiple">
+                                        <label class="form-check-label" for="pollMultiple">Allow multiple selections</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Link Preview Container (Hidden by default) -->
+                    <div id="linkPreviewContainer" class="mb-3 d-none">
+                        <div class="card">
+                            <div class="card-body">
+                                <input type="url" class="form-control mb-2" name="link_url" placeholder="Paste a link">
+                                <div id="linkPreview"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="postSubmitBtn">Post</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

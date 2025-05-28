@@ -34,10 +34,9 @@
             padding: 0.8rem 0;
         }
         
-        .navbar-brand {
-            font-weight: 700;
-            color: var(--primary-color) !important;
-            font-size: 1.5rem;
+        .navbar-brand img {
+            width: 70px;
+            height: auto;
         }
         
         .nav-link {
@@ -167,7 +166,7 @@
     <nav class="navbar navbar-expand-lg sticky-top">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="{% url 'home' %}">
-                <i class="bi bi-cpu me-2"></i>BrainLink
+                <img src="{% static 'images/BrainLink.png' %}" alt="" srcset="">
             </a>
             
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
@@ -209,7 +208,11 @@
                                 <li><h6 class="dropdown-header">Notifications</h6></li>
                                 {% for notification in request.user.received_notifications.all|slice:":5" %}
                                     <li>
-                                        <a class="dropdown-item" href="{{ notification.link|default:'#' }}">{{ notification.message }}</a>
+                                        <a class="dropdown-item {% if not notification.read %}fw-bold{% endif %}" href="{% url 'view_notification' notification.id %}">
+                                            {{ notification.message }}
+                                            <br>
+                                            <small class="text-muted">{{ notification.created_at|timesince }} ago</small>
+                                        </a>
                                     </li>
                                 {% empty %}
                                     <li><span class="dropdown-item">No new notifications</span></li>
@@ -240,7 +243,7 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li>
-                                <a class="dropdown-item" href="{% url 'profile' user.username %}">
+                                <a class="dropdown-item" href="{% url 'profile_view' user.username %}">
                                     <i class="bi bi-person me-2"></i> Profile
                                 </a>
                             </li>

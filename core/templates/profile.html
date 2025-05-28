@@ -1,103 +1,501 @@
 {% extends 'base.html' %}
 {% load static %}
+{% block title %}{{ profile_user.username }} - Profile | BrainProject{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/profile.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-lg-8 mx-auto">
-            <!-- Profile Header -->
-            <div class="card mb-4">
-                <div class="card-body text-center">
-                    {% if profile_user.profile.profile_pic %}
-                        <img src="{{ profile_user.profile.profile_pic.url }}" class="rounded-circle mb-3" width="120" height="120">
+<div class="profile-container">
+    <!-- Profile Header Section -->
+    <div class="profile-header">
+        <div class="cover-photo">
+            {% if profile_user.profile.cover_photo %}
+            <img src="{{ profile_user.profile.cover_photo.url }}" alt="Cover photo" class="cover-img">
+            {% else %}
+            <div class="default-cover"></div>
+            {% endif %}
+            
+            {% if request.user == profile_user %}
+            <button class="btn btn-sm btn-light edit-cover-btn" id="editCoverBtn">
+                <i class="bi bi-camera-fill"></i> Edit Cover
+            </button>
+            {% endif %}
+        </div>
+        
+        <div class="profile-info">
+            <div class="profile-pic-container">
+                {% if profile_user.profile.profile_pic %}
+                <img src="{{ profile_user.profile.profile_pic.url }}" class="profile-pic" alt="Profile picture">
+                {% else %}
+                <img src="{% static 'images/default-profile.jpg' %}" class="profile-pic" alt="Profile picture">
+                {% endif %}
+                
+                {% if request.user == profile_user %}
+                <button class="btn btn-sm btn-primary edit-profile-pic-btn" id="editProfilePicBtn">
+                    <i class="bi bi-camera-fill"></i>
+                </button>
+                {% endif %}
+            </div>
+            
+            <div class="profile-details">
+                <h1 class="profile-name">{{ profile_user.user.get_full_name|default:profile_user.user.username }}</h1>
+                <p class="profile-title">{{ profile_user.profile.headline|default:"Member at BrainProject" }}</p>
+                
+                <div class="profile-stats">
+                    <div class="stat-item">
+                        <span class="stat-number">{{ profile_user.profile.get_connection_count }}</span>
+                        <span class="stat-label">Connections</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">{{ profile_user.profile.get_post_count }}</span>
+                        <span class="stat-label">Posts</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">{{ profile_user.profile.get_follower_count }}</span>
+                        <span class="stat-label">Followers</span>
+                    </div>
+                </div>
+                
+                <div class="profile-actions">
+                    {% if request.user == profile_user %}
+                        <a href="{% url 'edit_profile' request.user.username %}" class="btn btn-primary">
+                            <i class="bi bi-pencil-square me-1"></i> Edit Profile
+                        </a>
+                        <button class="btn btn-outline-secondary" id="shareProfileBtn">
+                            <i class="bi bi-share me-1"></i> Share
+                        </button>
                     {% else %}
-                        <img src="{% static 'images/default-profile.jpg' %}" class="rounded-circle mb-3" width="120" height="120">
-                    {% endif %}
-                    <h3>{{ profile_user.username }}</h3>
-                    <p class="text-muted">{{ profile_user.profile.get_role_display }}</p>
-                    
-                    <div class="d-flex justify-content-center">
-                        {% if request.user == profile_user %}
-                            <!-- Show create post and edit profile for the user -->
-                            <a href="{% url 'create_post' %}" class="btn btn-primary me-2">
-                                <i class="bi bi-plus"></i> Create Post
-                            </a>
-                            <a href="{% url 'edit_profile' request.user.username %}" class="btn btn-outline-secondary">
-                                <i class="bi bi-pencil-square me-1"></i> Edit Profile
-                            </a>
+                        {% if is_connected %}
+                            <button class="btn btn-success" disabled>
+                                <i class="bi bi-check-circle"></i> Connected
+                            </button>
+                        {% elif connection_request_sent %}
+                            <button class="btn btn-secondary" disabled>
+                                <i class="bi bi-hourglass"></i> Request Sent
+                            </button>
                         {% else %}
-                            <!-- Show connect button for other users -->
-                            {% if is_connected %}
-                                <button class="btn btn-success me-2" disabled>
-                                    <i class="bi bi-check-circle"></i> Connected
+                            <form method="post" action="{% url 'send_connection_request' profile_user.user.username %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-person-plus me-1"></i> Connect
                                 </button>
-                            {% elif connection_request_sent %}
-                                <button class="btn btn-secondary me-2" disabled>
-                                    <i class="bi bi-hourglass"></i> Request Sent
-                                </button>
+                            </form>
+                        {% endif %}
+                        <!-- Changed from modal trigger to direct link -->
+                        <a href="{% url 'chat_view' profile_user.user.username %}" class="btn btn-outline-primary">
+                            <i class="bi bi-envelope me-1"></i> Start Chat
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <nav class="profile-nav">
+            <ul class="nav nav-tabs" id="profileTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="posts-tab" data-bs-toggle="tab" data-bs-target="#posts" type="button" role="tab">Posts</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="about-tab" data-bs-toggle="tab" data-bs-target="#about" type="button" role="tab">About</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="connections-tab" data-bs-toggle="tab" data-bs-target="#connections" type="button" role="tab">Connections</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="projects-tab" data-bs-toggle="tab" data-bs-target="#projects" type="button" role="tab">Projects</button>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    
+    <!-- Profile Content Section -->
+    <div class="profile-content">
+        <div class="tab-content" id="profileTabContent">
+            <!-- Posts Tab -->
+            <div class="tab-pane fade show active" id="posts" role="tabpanel">
+                {% if request.user == profile_user %}
+                <div class="card create-post-card mb-4">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            {% if request.user.profile.profile_pic %}
+                            <img src="{{ request.user.profile.profile_pic.url }}" class="rounded-circle me-3" width="48" height="48">
                             {% else %}
-                                <form method="post" action="{% url 'send_connection_request' profile_user.username %}" class="d-inline">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-primary me-2">
-                                        <i class="bi bi-person-plus"></i> Connect
-                                    </button>
-                                </form>
+                            <img src="{% static 'images/default-profile.jpg' %}" class="rounded-circle me-3" width="48" height="48">
                             {% endif %}
-                            <a href="#" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#messageModal">
-                                <i class="bi bi-envelope"></i> Message
-                            </a>
+                            <button class="btn btn-post-trigger w-100 text-start" data-bs-toggle="modal" data-bs-target="#createPostModal">
+                                Start a post...
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="posts-container" id="postsContainer">
+                    {% for post in posts %}
+                    {% include 'posts/post_card.html' with post=post %}
+                    {% empty %}
+                    <div class="empty-feed">
+                        <img src="{% static 'images/empty-feed.svg' %}" alt="No posts" class="empty-img">
+                        <h5>No posts yet</h5>
+                        {% if request.user == profile_user %}
+                        <p>Share your first post with your network</p>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createPostModal">
+                            Create Post
+                        </button>
+                        {% else %}
+                        <p>This user hasn't posted anything yet</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                {% if posts.has_next %}
+                <div class="text-center mt-4">
+                    <button class="btn btn-outline-primary" id="loadMorePosts" data-page="2">
+                        Load More Posts
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- About Tab -->
+            <div class="tab-pane fade" id="about" role="tabpanel">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5><i class="bi bi-info-circle me-2"></i> Overview</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="about-item">
+                                    <h6>Current Role</h6>
+                                    <p>{{ profile_user.profile.current_role|default:"Not specified" }}</p>
+                                </div>
+                                <div class="about-item">
+                                    <h6>Education</h6>
+                                    <p>{{ profile_user.profile.education|default:"Not specified" }}</p>
+                                </div>
+                                <div class="about-item">
+                                    <h6>Location</h6>
+                                    <p>{{ profile_user.profile.location|default:"Not specified" }}</p>
+                                </div>
+                                <div class="about-item">
+                                    <h6>Joined</h6>
+                                    <p>{{ profile_user.date_joined|date:"F Y" }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5><i class="bi bi-award me-2"></i> Skills</h5>
+                            </div>
+                            <div class="card-body">
+                                {% if profile_user.profile.skills.all %}
+                                <div class="skills-container">
+                                    {% for skill in profile_user.profile.skills.all %}
+                                    <span class="skill-badge">{{ skill.name }}</span>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <p class="text-muted">No skills added yet</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-6">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5><i class="bi bi-briefcase me-2"></i> Experience</h5>
+                            </div>
+                            <div class="card-body">
+                                {% if profile_user.profile.experience_set.all %}
+                                <div class="timeline">
+                                    {% for exp in profile_user.profile.experience_set.all %}
+                                    <div class="timeline-item">
+                                        <div class="timeline-badge"></div>
+                                        <div class="timeline-content">
+                                            <h6>{{ exp.position }}</h6>
+                                            <p class="text-muted">{{ exp.company }}</p>
+                                            <small class="text-muted">
+                                                {{ exp.start_date|date:"M Y" }} - 
+                                                {% if exp.current %}Present{% else %}{{ exp.end_date|date:"M Y" }}{% endif %}
+                                            </small>
+                                            {% if exp.description %}
+                                            <p class="mt-2">{{ exp.description }}</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <p class="text-muted">No experience added yet</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Connections Tab -->
+            <div class="tab-pane fade" id="connections" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Connections</h5>
+                            <span class="badge bg-primary">{{ profile_user.profile.get_connection_count }} connections</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {% if connections %}
+                        <div class="row">
+                            {% for connection in connections %}
+                            <div class="col-md-6 mb-3">
+                                <div class="connection-card">
+                                    <div class="d-flex align-items-center">
+                                        <a href="{% url 'profile' connection.username %}" class="connection-pic">
+                                            {% if connection.profile.profile_pic %}
+                                            <img src="{{ connection.profile.profile_pic.url }}" alt="{{ connection.username }}">
+                                            {% else %}
+                                            <img src="{% static 'images/default-profile.jpg' %}" alt="{{ connection.username }}">
+                                            {% endif %}
+                                        </a>
+                                        <div class="connection-info">
+                                            <h6><a href="{% url 'profile' connection.username %}">{{ connection.get_full_name|default:connection.username }}</a></h6>
+                                            <p class="text-muted small">{{ connection.profile.headline|truncatechars:50 }}</p>
+                                        </div>
+                                    </div>
+                                    {% if request.user != connection %}
+                                    <div class="connection-actions">
+                                        {% if request.user.profile in connection.profile.get_connections %}
+                                        <button class="btn btn-sm btn-outline-secondary" disabled>
+                                            <i class="bi bi-check"></i> Connected
+                                        </button>
+                                        {% else %}
+                                        <form method="post" action="{% url 'send_connection_request' connection.username %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-primary">
+                                                <i class="bi bi-person-plus"></i> Connect
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="empty-state">
+                            <img src="{% static 'images/no-connections.svg' %}" alt="No connections" class="empty-img">
+                            <h5>No connections yet</h5>
+                            {% if request.user == profile_user %}
+                            <p>Start building your network by connecting with others</p>
+                            <a href="{% url 'connections' %}" class="btn btn-primary">Find Connections</a>
+                            {% else %}
+                            <p>This user hasn't connected with anyone yet</p>
+                            {% endif %}
+                        </div>
                         {% endif %}
                     </div>
                 </div>
             </div>
             
-            <!-- Create Post Form (only shown when requested) -->
-            {% if show_create_form %}
-            <div class="card mb-4">
-                <div class="card-body">
-                    <form method="post" enctype="multipart/form-data">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            {{ form.content.label_tag }}
-                            {{ form.content }}
+            <!-- Projects Tab -->
+            <div class="tab-pane fade" id="projects" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Projects</h5>
+                            {% if request.user == profile_user %}
+                            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addProjectModal">
+                                <i class="bi bi-plus"></i> Add Project
+                            </button>
+                            {% endif %}
                         </div>
-                        <div class="mb-3">
-                            {{ form.image.label_tag }}
-                            {{ form.image }}
+                    </div>
+                    <div class="card-body">
+                        {% if projects %}
+                        <div class="row">
+                            {% for project in projects %}
+                            <div class="col-md-6 mb-4">
+                                <div class="project-card">
+                                    {% if project.image %}
+                                    <img src="{{ project.image.url }}" class="project-image" alt="{{ project.title }}">
+                                    {% else %}
+                                    <div class="project-image default-image">
+                                        <i class="bi bi-file-earmark-text"></i>
+                                    </div>
+                                    {% endif %}
+                                    <div class="project-details">
+                                        <h5>{{ project.title }}</h5>
+                                        <p class="text-muted">{{ project.description|truncatechars:100 }}</p>
+                                        <div class="project-meta">
+                                            <span class="badge bg-light text-dark">
+                                                <i class="bi bi-calendar me-1"></i> {{ project.date|date:"M Y" }}
+                                            </span>
+                                            {% if project.link %}
+                                            <a href="{{ project.link }}" target="_blank" class="badge bg-primary text-white">
+                                                <i class="bi bi-link-45deg me-1"></i> View
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
                         </div>
-                        <div class="mb-3">
-                            {{ form.video_url.label_tag }}
-                            {{ form.video_url }}
+                        {% else %}
+                        <div class="empty-state">
+                            <img src="{% static 'images/no-projects.svg' %}" alt="No projects" class="empty-img">
+                            <h5>No projects yet</h5>
+                            {% if request.user == profile_user %}
+                            <p>Showcase your work by adding projects to your profile</p>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProjectModal">
+                                Add Project
+                            </button>
+                            {% else %}
+                            <p>This user hasn't added any projects yet</p>
+                            {% endif %}
                         </div>
-                        <button type="submit" class="btn btn-primary">Post</button>
-                        <a href="{% url 'profile' profile_user.username %}" class="btn btn-outline-secondary">Cancel</a>
-                    </form>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
-            {% endif %}
-            
-            <!-- User's Posts -->
-            <h5 class="mb-3">Recent Activity</h5>
-            {% for post in posts %}
-            <div class="card mb-3">
-                <!-- Same post card structure as home.html -->
-                 {% for post in posts %}
-                    {% include 'partials/post_card.html' with post=post %}
-                {% endfor %}
-            </div>
-            {% empty %}
-            <div class="alert alert-info">
-                No posts yet.
-            </div>
-            {% endfor %}
         </div>
     </div>
 </div>
 
-<style>
-    .btn-primary:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        transition: all 0.2s ease;
-    }
-</style>
+<!-- Create Post Modal -->
+{% include 'posts/create_post_modal.html' %}
+
+<!-- Message Modal -->
+<div class="modal fade" id="messageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Send Message to {{ profile_user.username }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'chat_view' profile_user.user.username %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <textarea class="form-control" name="message" rows="5" placeholder="Write your message..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Send Message</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Project Modal -->
+<div class="modal fade" id="addProjectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Project</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'add_project' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Project Title</label>
+                        <input type="text" class="form-control" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Project Image</label>
+                        <input type="file" class="form-control" name="image" accept="image/*">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Project Link (URL)</label>
+                        <input type="url" class="form-control" name="link">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Date</label>
+                        <input type="date" class="form-control" name="date">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Project</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Cover Photo Modal -->
+<div class="modal fade" id="editCoverModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Cover Photo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{#% url 'update_cover_photo' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Upload New Cover Photo</label>
+                        <input type="file" class="form-control" name="cover_photo" accept="image/*" required>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Recommended size: 1500x500 pixels
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Profile Picture Modal -->
+<div class="modal fade" id="editProfilePicModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Update Profile Picture</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{#% url 'update_profile_pic' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Upload New Photo</label>
+                        <input type="file" class="form-control" name="profile_pic" accept="image/*" required>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Recommended size: 400x400 pixels
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/profile.js' %}"></script>
 {% endblock %}

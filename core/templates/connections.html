@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">My Connections</h4>
+                </div>
+                <div class="card-body">
+                    <!-- Pending Requests -->
+                    {% if pending_requests %}
+                    <div class="mb-5">
+                        <h5 class="mb-3">Pending Connection Requests</h5>
+                        <div class="row">
+                            {% for req in pending_requests %}
+                            <div class="col-md-6 mb-3">
+                                <div class="connection-card">
+                                    <div class="d-flex align-items-center">
+                                        <a href="{% url 'profile' req.sender.user.username %}" class="connection-pic">
+                                            {% if req.sender.profile_pic %}
+                                            <img src="{{ req.sender.profile_pic.url }}" alt="{{ req.sender.user.username }}">
+                                            {% else %}
+                                            <img src="{% static 'images/default-profile.jpg' %}" alt="{{ req.sender.user.username }}">
+                                            {% endif %}
+                                        </a>
+                                        <div class="connection-info">
+                                            <h6><a href="{% url 'profile' req.sender.user.username %}">
+                                                {{ req.sender.user.get_full_name|default:req.sender.user.username }}
+                                            </a></h6>
+                                            <p class="text-muted small">{{ req.sender.headline|truncatechars:50 }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="connection-actions mt-2">
+                                        <form method="post" action="{% url 'respond_to_request' req.id 'accept' %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-success me-2">
+                                                <i class="bi bi-check"></i> Accept
+                                            </button>
+                                        </form>
+                                        <form method="post" action="{% url 'respond_to_request' req.id 'reject' %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                                <i class="bi bi-x"></i> Decline
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Current Connections -->
+                    <div class="mb-5">
+                        <h5 class="mb-3">Your Connections ({{ connections.count }})</h5>
+                        {% if connections %}
+                        <div class="row">
+                            {% for connection in connections %}
+                            <div class="col-md-6 mb-3">
+                                <div class="connection-card">
+                                    <div class="d-flex align-items-center">
+                                        <a href="{% url 'profile' connection.user.username %}" class="connection-pic">
+                                            {% if connection.profile_pic %}
+                                            <img src="{{ connection.profile_pic.url }}" alt="{{ connection.user.username }}">
+                                            {% else %}
+                                            <img src="{% static 'images/default-profile.jpg' %}" alt="{{ connection.user.username }}">
+                                            {% endif %}
+                                        </a>
+                                        <div class="connection-info">
+                                            <h6><a href="{% url 'profile' connection.user.username %}">
+                                                {{ connection.user.get_full_name|default:connection.user.username }}
+                                            </a></h6>
+                                            <p class="text-muted small">{{ connection.headline|truncatechars:50 }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="connection-actions mt-2">
+                                        <a href="{% url 'send_message' connection.user.username %}" 
+                                           class="btn btn-sm btn-outline-primary me-2">
+                                            <i class="bi bi-envelope"></i> Message
+                                        </a>
+                                        <form method="post" action="{% url 'remove_connection' connection.user.username %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <i class="bi bi-person-dash"></i> Remove
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="empty-state text-center py-5">
+                            <img src="{% static 'images/no-connections.svg' %}" alt="No connections" class="empty-img mb-4" style="max-width: 300px;">
+                            <h5>No connections yet</h5>
+                            <p class="text-muted">Start building your network by connecting with others</p>
+                            <a href="{% url 'explore' %}" class="btn btn-primary mt-3">
+                                <i class="bi bi-people-fill me-2"></i> Find People to Connect With
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Suggested Connections -->
+                    {% if suggested_connections %}
+                    <div>
+                        <h5 class="mb-3">People You May Know</h5>
+                        <div class="row">
+                            {% for user in suggested_connections %}
+                            <div class="col-md-6 mb-3">
+                                <div class="connection-card">
+                                    <div class="d-flex align-items-center">
+                                        <a href="{% url 'profile' user.username %}" class="connection-pic">
+                                            {% if user.profile.profile_pic %}
+                                            <img src="{{ user.profile.profile_pic.url }}" alt="{{ user.username }}">
+                                            {% else %}
+                                            <img src="{% static 'images/default-profile.jpg' %}" alt="{{ user.username }}">
+                                            {% endif %}
+                                        </a>
+                                        <div class="connection-info">
+                                            <h6><a href="{% url 'profile' user.username %}">
+                                                {{ user.get_full_name|default:user.username }}
+                                            </a></h6>
+                                            <p class="text-muted small">{{ user.profile.headline|truncatechars:50 }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="connection-actions mt-2">
+                                        <form method="post" action="{% url 'send_connection_request' user.username %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-primary">
+                                                <i class="bi bi-person-plus"></i> Connect
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

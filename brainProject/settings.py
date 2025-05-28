@@ -27,7 +27,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'core',
+    'crispy_forms',
+    'crispy_bootstrap5',
 ]
+
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+CRISPY_TEMPLATE_PACK = "bootstrap5"
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -55,6 +61,9 @@ TEMPLATES = [
         },
     },
 ]
+
+CRISPY_TEMPLATE_PACK = 'bootstrap5'  # or 'bootstrap4' or 'uni_form' depending on what you're using
+
 
 WSGI_APPLICATION = 'brainProject.wsgi.application'
 
@@ -111,6 +120,17 @@ LOGOUT_REDIRECT_URL = '/login/'
 AUTH_USER_MODEL = 'core.User'
 
 STATIC_URL = 'static/'
+# Folder where static files will be collected to
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# Folders Django will look in for static files (including images)
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media') # Where uploaded files are stored
+MEDIA_URL = '/media/' # URL prefix for accessing media files
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
