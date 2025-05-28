@@ -106,11 +106,19 @@
             
             <!-- Comment Form -->
             <div class="d-flex align-items-center mb-2">
-                <img src="{% if request.user.profile.profile_pic %}{{ request.user.profile.profile_pic.url }}{% else %}{% static 'images/default-profile.jpg' %}{% endif %}" 
-                     class="rounded-circle me-2" 
-                     width="32" 
-                     height="32"
-                     alt="Your profile picture">
+                {% if request.user.profile and request.user.profile.profile_pic %}
+                <img src="{{ request.user.profile.profile_pic.url }}" 
+                    class="rounded-circle me-2" 
+                    width="32" 
+                    height="32"
+                    alt="Your profile picture">
+                {% else %}
+                <img src="{% static 'images/default-profile.jpg' %}" 
+                    class="rounded-circle me-2" 
+                    width="32" 
+                    height="32"
+                    alt="Default profile picture">
+                {% endif %}
                 <div class="input-group">
                     <input type="text" 
                            class="form-control form-control-sm rounded-pill comment-input"
@@ -163,6 +171,8 @@
         </div>
     </div>
 </div>
+
+<script src="{% static 'js/post_card.js' %}"></script>
 
 <script>
 // Basic JavaScript for interactivity

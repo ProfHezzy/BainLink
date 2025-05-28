@@ -14,13 +14,14 @@ from django.contrib.contenttypes.models import ContentType
 from .forms import (
     CustomUserCreationForm, PostForm, SubjectForm, PostSearchForm,
     ProfileForm, UserEditForm, MessageForm, ProjectForm, ChallengeForm,
-    SubmissionForm, SystemSettingsForm # Added ChallengeForm, SubmissionForm, SystemSettingsForm from forms.py
+    SubmissionForm, SystemSettingsForm, # Added ChallengeForm, SubmissionForm, SystemSettingsForm from forms.py
+    CommentForm, # Assuming CommentForm exists for adding comments
 )
 
 # Import all models
 from .models import (
     Profile, User, Post, Subject, Challenge, Submission,
-    Connection, ConnectionRequest, Notification, Message, Project,
+    Connection, ConnectionRequest, Notification, Message, Project, Comment,
     Skill # Skill model is now separate and used by Profile
     # Assuming Experience and Education models exist based on about_view
 )
@@ -409,38 +410,50 @@ def challenge_detail_view(request, pk):
     }
     return render(request, 'challenges/detail.html', context)
 
-# --- Connection Management Views ---
 
+
+# --- Connection Management Views ---
 @login_required
 def connections_view(request):
     """
     Displays a user's confirmed connections, pending requests, and suggested connections.
     """
     user = request.user
-    # Get all confirmed connections for the profile
-    connections = user.profile.get_connections().select_related('user') # Select related 'user' for profiles
-    
-    # Get pending received connection requests for the User object
-    pending_requests = ConnectionRequest.objects.filter(receiver=user, status='pending').select_related('sender')
-    
-    # Suggested connections: users not connected with, not self, and not having a pending request
-    # Exclude current user, users already connected with, and users who sent a pending request
-    # Use user.id for filtering users, and req.sender.id for pending requests (assuming sender is User FK)
+    connections = user.profile.get_connections().select_related('user')
+
+    # --- Debugging code START ---
+    for connection in connections[:5]:  # Iterate through the first 5 connections
+        try:
+            profile = getattr(connection.user, 'profile', None)
+            if profile and profile.profile_pic:
+                img_url = profile.profile_pic.url
+                print(f"Connection: {connection.user.username}, Profile Pic URL: {img_url}")
+            else:
+                print(f"Connection: {connection.user.username} - No profile picture")
+        except ValueError as e:
+            print(f"Error with connection: {connection.user.username} - {e}")
+    # --- Debugging code END ---
+
+    pending_requests = ConnectionRequest.objects.filter(
+        receiver=user, status='pending'
+    ).select_related('sender')
+
     connected_user_ids = [p.user.id for p in connections]
     pending_sender_ids = [req.sender.id for req in pending_requests]
 
     suggested = User.objects.exclude(
         id__in=connected_user_ids + pending_sender_ids + [user.id]
     ).filter(
-        # Ensure only users with a profile are suggested
         profile__isnull=False
     ).order_by('?')[:10].select_related('profile')
-    
-    return render(request, 'connections/connections.html', {
+
+    return render(request, 'my_connections.html', {
         'connections': connections,
         'pending_requests': pending_requests,
         'suggested_connections': suggested
     })
+
+
 
 @login_required
 def send_connection_request(request, username):
@@ -658,6 +671,10 @@ logger = logging.getLogger(__name__)
 
 @login_required
 def get_messages(request, recipient_username):
+    """
+    Fetches messages between the current user and a specified recipient.
+    Supports fetching messages since a given timestamp for polling.
+    """
     logger.debug(f"get_messages called by: {request.user.username} for recipient_username: {recipient_username}")
     try:
         recipient = User.objects.get(username=recipient_username)
@@ -667,42 +684,51 @@ def get_messages(request, recipient_username):
         return JsonResponse({'error': 'Recipient not found'}, status=404)
 
     # Base queryset for messages between current user and recipient
+    # Order by timestamp for chronological display and correct 'since' filtering
     messages_qs = Message.objects.filter(
         Q(sender=request.user, recipient=recipient) | Q(sender=recipient, recipient=request.user)
-    ).order_by('timestamp') # Order by timestamp applies to the full set
+    ).order_by('timestamp') 
 
-    # Log the full base queryset before 'since' filter
     logger.debug(f"Base messages_qs count (before 'since' filter): {messages_qs.count()}")
-    # Log first few messages for debugging, showing sender/recipient/content
-    for msg in messages_qs[:5]: 
-        logger.debug(f"  Base Message (ID:{msg.id}): Sender={msg.sender.username}, Recipient={msg.recipient.username}, Content='{msg.content[:20] if msg.content else ''}...'{' (File: ' + msg.file_name + ')' if msg.file else ''}")
 
     since_timestamp_str = request.GET.get('since')
     if since_timestamp_str:
         logger.debug(f"Received 'since' parameter: {since_timestamp_str}")
         try:
-            since_dt = datetime.fromisoformat(since_timestamp_str.replace('Z', '+00:00'))
+            # Handle both 'Z' for UTC and direct ISO format
+            if since_timestamp_str.endswith('Z'):
+                since_dt = datetime.fromisoformat(since_timestamp_str[:-1] + '+00:00')
+            else:
+                since_dt = datetime.fromisoformat(since_timestamp_str)
+            
             logger.debug(f"Parsed 'since' datetime: {since_dt}")
-            # --- CHANGE THIS LINE ---
-            messages_qs = messages_qs.filter(timestamp__gte=since_dt) # Changed from gt to gte
+            # Filter for messages *at or after* the 'since' timestamp
+            messages_qs = messages_qs.filter(timestamp__gte=since_dt) 
             logger.debug(f"Applied timestamp filter. Messages count AFTER 'since' filter: {messages_qs.count()}")
 
         except ValueError as e:
             logger.error(f"ValueError parsing 'since' timestamp '{since_timestamp_str}': {e}")
-                # If the timestamp is malformed, the filter is not applied.
-                # The frontend `createMessageElement` ID check helps prevent visual duplicates.
+            # If the timestamp is malformed, we'll return all messages (or what's left after other filters)
+            # This is a graceful fallback rather than erroring out the whole request.
     else:
         logger.debug("No 'since' timestamp provided, fetching initial messages.")
 
     message_data = []
-    for msg in messages_qs: # Loop through the filtered messages
+    # Loop through the filtered messages and prepare data for JSON response
+    for msg in messages_qs: 
+        # Add a check to prevent adding duplicates if `timestamp__gte` includes already-fetched messages
+        # This reinforces the client-side check but is good for robustness.
+        # However, for pure polling, if client correctly uses `gt` or `gte` for *new* messages, 
+        # then duplicates shouldn't be an issue on subsequent fetches.
+        # The frontend's `createMessageElement` with `id` check is ultimately more important here.
+
         msg_dict = {
             'id': msg.id,
             'sender_username': msg.sender.username,
             'content': msg.content,
             'timestamp': msg.timestamp.isoformat(), # Essential for JS date parsing
             # Include file details in the response if a file is attached
-            'file_url': msg.file_url, # Uses the @property
+            'file_url': msg.file_url, # Uses the @property from your Message model
             'file_name': msg.file_name,
             'file_type': msg.file_type,
             'is_image': msg.is_image, # Uses the @property
@@ -716,19 +742,26 @@ def get_messages(request, recipient_username):
     return JsonResponse(message_data, safe=False)
 
 
-import logging
-logger = logging.getLogger(__name__)
-
 @login_required
-# @csrf_exempt # Consider removing this in production and relying on CSRF token
+# @csrf_exempt # Keep this commented out if you're correctly sending CSRF token from JS
 def send_message_api(request, recipient_username):
+    """
+    Handles sending new chat messages, including text content and file attachments.
+    """
     if request.method == 'POST':
         logger.debug(f"send_message_api called. User: {request.user.username}, Recipient: {recipient_username}")
+
+        # --- IMPORTANT DEBUGGING LOGS ---
+        logger.debug(f"Request POST data: {request.POST}")
+        logger.debug(f"Request FILES data: {request.FILES}")
+        # --- END IMPORTANT DEBUGGING LOGS ---
+
         content = request.POST.get('content', '').strip()
-        uploaded_file = request.FILES.get('file')
+        uploaded_file = request.FILES.get('file') # 'file' is the name of the FormData key
 
-        logger.debug(f"Content: '{content}', Uploaded File: {uploaded_file}")
+        logger.debug(f"Content extracted: '{content}', Uploaded File extracted: {uploaded_file}")
 
+        # Validate that either content or a file is present
         if not content and not uploaded_file:
             logger.warning("Attempted to send message with no content and no file.")
             return JsonResponse({'error': 'Message content or a file is required'}, status=400)
@@ -746,19 +779,21 @@ def send_message_api(request, recipient_username):
             'content': content,
         }
 
+        # Handle file attachment if present
         if uploaded_file:
             message_fields['file'] = uploaded_file
             message_fields['file_name'] = uploaded_file.name
             message_fields['file_type'] = uploaded_file.content_type
-            logger.debug(f"File details added: Name={uploaded_file.name}, Type={uploaded_file.content_type}")
+            logger.debug(f"File details added to message_fields: Name={uploaded_file.name}, Type={uploaded_file.content_type}, Size={uploaded_file.size} bytes")
 
         try:
             new_message = Message.objects.create(**message_fields)
-            logger.info(f"Message ID {new_message.id} created successfully.")
+            logger.info(f"Message ID {new_message.id} created successfully by {request.user.username} to {recipient.username}.")
         except Exception as e:
             logger.exception(f"Error creating message in DB: {e}") # Use exception for full traceback
             return JsonResponse({'error': 'Failed to save message'}, status=500)
 
+        # Prepare response data for the newly created message
         response_data = {
             'id': new_message.id,
             'sender_username': new_message.sender.username,
@@ -766,6 +801,7 @@ def send_message_api(request, recipient_username):
             'timestamp': new_message.timestamp.isoformat(),
         }
 
+        # Add file-related fields to response if a file was attached
         if new_message.file:
             response_data['file_url'] = new_message.file_url
             response_data['file_name'] = new_message.file_name
@@ -781,6 +817,7 @@ def send_message_api(request, recipient_username):
     else:
         logger.warning(f"Invalid request method for send_message_api: {request.method}")
         return JsonResponse({'error': 'Invalid request method'}, status=405)
+
 
 
 @login_required
@@ -823,6 +860,58 @@ def message_list_view(request):
     }
     return render(request, 'messages/message_list.html', context)
 
+
+
+from django.db.models import Q, Max, Count
+@login_required
+def chat_list_history(request, username):
+    current_user = request.user
+
+    # Get all messages involving the current user
+    messages = Message.objects.filter(Q(sender=current_user) | Q(recipient=current_user))
+
+    # Get unique conversation partners based on latest message timestamp
+    latest_messages = messages.values(
+        'sender', 'recipient'
+    ).annotate(
+        last_message_time=Max('timestamp')
+    ).order_by('-last_message_time')
+
+    conversations = []
+    seen_user_ids = set()
+
+    for entry in latest_messages:
+        # Identify the conversation partner (not current user)
+        other_user_id = entry['recipient'] if entry['sender'] == current_user.id else entry['sender']
+
+        if other_user_id not in seen_user_ids:
+            other_user = User.objects.get(id=other_user_id)
+
+            # Fetch latest message in this conversation
+            last_message = Message.objects.filter(
+                (Q(sender=current_user, recipient=other_user) | Q(sender=other_user, recipient=current_user))
+            ).order_by('-timestamp').first()
+
+            # Count unread messages from this user to the current user
+            unread_count = Message.objects.filter(
+                sender=other_user,
+                recipient=current_user,
+                read=False
+            ).count()
+
+            conversations.append({
+                'user': other_user,
+                'last_message': last_message,
+                'unread_count': unread_count,
+            })
+
+            seen_user_ids.add(other_user_id)
+
+    context = {
+        'conversations': conversations
+    }
+
+    return render(request, 'messages/chat_history.html', context)
 
 @login_required
 def message_detail_view(request, message_id):
@@ -1149,3 +1238,138 @@ def system_settings(request):
         form = SystemSettingsForm(initial=initial)
     
     return render(request, 'admin/system_settings.html', {'form': form})
+
+
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+# --- Network Page View ---
+@login_required
+def network_view(request):
+    current_user = request.user
+    
+    # Exclude current user
+    users_list = User.objects.exclude(pk=current_user.pk)
+
+    # Exclude users already connected or with pending requests involving the current user
+    # Get IDs of users involved in 'accepted' or 'pending' requests with current_user
+    connected_or_pending_user_ids = set()
+    requests_involving_current_user = ConnectionRequest.objects.filter(
+        (Q(sender=current_user) | Q(receiver=current_user)) & 
+        (Q(status='accepted') | Q(status='pending'))
+    )
+    for req in requests_involving_current_user:
+        connected_or_pending_user_ids.add(req.sender.pk)
+        connected_or_pending_user_ids.add(req.receiver.pk)
+    
+    # Further exclude these users (making sure not to exclude current_user again if they were in the set)
+    users_list = users_list.exclude(pk__in=connected_or_pending_user_ids - {current_user.pk})
+
+    # Get filter parameters
+    query = request.GET.get('q')
+    skills_query = request.GET.get('skills')
+    industry_query = request.GET.get('industry')
+
+    if query:
+        users_list = users_list.filter(
+            Q(username__icontains=query) |
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query) |
+            Q(profile__headline__icontains=query) # Assumes User has a 'profile' relation
+        ).distinct() # Use distinct if joining on profile causes duplicates
+
+    if skills_query:
+        # This depends on how skills are stored on the Profile model
+        # Example: if Profile has a ManyToManyField 'skills' to a Skill model
+        # users_list = users_list.filter(profile__skills__name__icontains=skills_query).distinct()
+        # Example: if Profile has a text field 'skills_text'
+        users_list = users_list.filter(profile__skills_text__icontains=skills_query).distinct()
+
+    if industry_query:
+        # Assumes Profile has an 'industry' field
+        users_list = users_list.filter(profile__industry__icontains=industry_query).distinct()
+
+    # For each user, determine connection status with current_user
+    # This is for the template to show "Connect", "Request Sent", or "Connected" (though "Connected" ones are excluded above)
+    users_for_template = []
+    for user_obj in users_list:
+        request_sent = ConnectionRequest.objects.filter(sender=current_user, receiver=user_obj, status='pending').exists()
+        # request_received = ConnectionRequest.objects.filter(sender=user_obj, receiver=current_user, status='pending').exists() # Not strictly needed if we only show "Connect" or "Sent"
+        
+        # Add custom attributes for template logic
+        user_obj.connection_request_sent_by_me = request_sent
+        # user_obj.is_connected_to_current_user = False # Already excluded
+        users_for_template.append(user_obj)
+
+    # Suggested Connections (Simplified example: users not connected, from same industry, or with mutual skills)
+    # This is a complex feature; a basic placeholder:
+    suggested_connections = User.objects.exclude(pk=current_user.pk)\
+                                      .exclude(pk__in=connected_or_pending_user_ids)\
+                                      .order_by('?')[:3] # Random 3 users, very basic
+
+    # Pagination
+    paginator = Paginator(users_for_template, 12) # 12 users per page
+    page = request.GET.get('page')
+    try:
+        paged_users_list = paginator.page(page)
+    except PageNotAnInteger:
+        paged_users_list = paginator.page(1)
+    except EmptyPage:
+        paged_users_list = paginator.page(paginator.num_pages)
+
+    context = {
+        'users_list': paged_users_list,
+        'suggested_connections': suggested_connections,
+        'request_GET': request.GET,
+    }
+    return render(request, 'your_template_path/network_page.html', context)
+
+
+
+@login_required
+def like_post(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+    profile = request.user.profile  # Assuming OneToOne relation is named 'profile'
+
+    if profile in post.likes.all():
+        post.likes.remove(profile)
+        liked = False
+    else:
+        post.likes.add(profile)
+        liked = True
+
+    return JsonResponse({'success': True, 'liked': liked, 'like_count': post.likes.count()})
+
+
+
+@login_required
+@require_POST
+def unlike_post(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+    if request.user in post.likes.all():
+        post.likes.remove(request.user)
+        liked = False
+    else:
+        liked = True
+    return JsonResponse({'success': True, 'liked': liked, 'likes_count': post.likes.count()})
+
+
+from django.http import JsonResponse, HttpResponse
+from django.template.loader import render_to_string
+@login_required
+def add_comment(request):
+    post_id = request.POST.get('post_id')
+    content = request.POST.get('content')
+    post = Post.objects.get(id=post_id)
+
+    comment = Comment.objects.create(user=request.user, post=post, content=content)
+    comment.save()
+
+    return JsonResponse({
+        'comment_html': render_to_string('partials/comment.html', {'comment': comment}, request=request)
+    })
+
+
+def view_all_comments(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+    comments = post.comments.all().order_by('-created_at') # Or your preferred ordering
+    comments_html = render_to_string('partials/comment.html', {'comments': comments, 'request': request}) # You might need to adjust the template to handle a list of comments
+    return HttpResponse(comments_html) # Or JsonResponse if you handle rendering on the client-side

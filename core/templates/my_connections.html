@@ -1,0 +1,353 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Connections{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/my_connections.css' %}">
+<style>
+    .connections-container {
+        max-width: 600px; /* Adjust as needed */
+        margin: 20px auto;
+        padding: 20px;
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .connections-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #eee;
+    }
+
+    .connections-title {
+        margin: 0;
+        font-size: 1.75em;
+        color: #007bff;
+    }
+
+    .connections-tabs {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    .tab {
+        padding: 10px 15px;
+        border-radius: 5px;
+        background-color: #e9ecef;
+        color: #495057;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        font-size: 0.9em;
+    }
+
+    .tab.active {
+        background-color: #007bff;
+        color: white;
+    }
+
+    .tab:hover {
+        background-color: #d3d7db;
+    }
+
+    .connections-section {
+        margin-top: 20px;
+    }
+
+    .section-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 1.5em;
+        color: #333;
+        margin-bottom: 15px;
+    }
+
+    .section-title .badge {
+        background-color: #6c757d;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-size: 0.8em;
+    }
+
+    .connection-list-item {
+        display: flex;
+        align-items: center;
+        padding: 15px;
+        border-bottom: 1px solid #f0f0f0;
+        text-decoration: none;
+        color: #333;
+        transition: background-color 0.2s ease-in-out;
+    }
+
+    .connection-list-item:last-child {
+        border-bottom: none;
+    }
+
+    .connection-list-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    .profile-pic-container {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        overflow: hidden;
+        margin-right: 15px;
+        border: 2px solid #007bff;
+    }
+
+    .profile-pic-container img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .connection-info {
+        flex-grow: 1;
+    }
+
+    .connection-name {
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+
+    .connection-title-text {
+        font-size: 0.9em;
+        color: #6c757d;
+    }
+
+    .connection-actions {
+        display: flex;
+        gap: 10px;
+        margin-left: 20px;
+    }
+
+    .btn-action {
+        padding: 8px 12px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 0.9em;
+        transition: background-color 0.3s ease;
+    }
+
+    .btn-outline-primary {
+        background-color: transparent;
+        color: #007bff;
+        border: 1px solid #007bff;
+    }
+
+    .btn-primary {
+        background-color: #007bff;
+        color: white;
+    }
+
+    .btn-success {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 30px;
+        color: #6c757d;
+    }
+
+    .empty-icon svg {
+        width: 48px;
+        height: 48px;
+        margin-bottom: 15px;
+        fill: #adb5bd;
+    }
+
+    .empty-state h3 {
+        margin-top: 0;
+        margin-bottom: 10px;
+        font-size: 1.3em;
+        color: #495057;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="connections-container">
+    <div class="connections-header">
+        <h1 class="connections-title">My Network</h1>
+        <div class="connections-tabs">
+            <div class="tab active" data-target="connections"><i class="bi bi-people-fill fw-bold" style="font-size: 1.2em;"></i></div>
+            <div class="tab" data-target="pending"><i class="bi bi-clock-history fw-bold" style="font-size: 1.2em;"></i></div>
+            <div class="tab" data-target="suggested"><i class="bi bi-person-plus-fill fw-bold" style="font-size: 1.2em;"></i></div>
+        </div>
+    </div>
+
+    <div class="connections-section" id="connections">
+        <h2 class="section-title">
+            Your Connections
+            <span class="badge">{{ connections|length }}</span>
+        </h2>
+
+        {% if connections %}
+        <div>
+            {% for connection in connections %}
+            <a href="{% url 'profile_view' username=connection.user.username %}" class="connection-list-item">
+                <div class="profile-pic-container">
+                    {% if connection.user.profile %}
+                        {% if connection.user.profile.profile_pic %}
+                        <img src="{{ connection.user.profile.profile_pic.url }}" alt="Profile Picture">
+                        {% else %}
+                        <img src="https://placehold.co/80x80/EBF4FF/76839A?text=User" alt="Default Profile Picture">
+                        {% endif %}
+                    {% else %}
+                        <img src="https://placehold.co/80x80/EBF4FF/76839A?text=User" alt="{{ connection.user.get_full_name }}">
+                    {% endif %}
+                </div>
+                <div class="connection-info">
+                    <div class="connection-name">{{ connection.user.get_full_name|default:connection.user.username }}</div>
+                    <p class="connection-title-text">
+                        {% if connection.user.profile.job_title %}
+                        {{ connection.user.profile.job_title }}
+                        {% if connection.user.profile.company %}
+                        at {{ connection.user.profile.company }}
+                        {% endif %}
+                        {% else %}
+                        Member since {{ connection.user.date_joined|date:"Y" }}
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="connection-actions">
+                    <button class="btn-action btn-primary btn-chat"
+                            onclick="window.location.href='{% url 'chat_view' username=connection.user.username %}'">
+                        Message
+                    </button>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"/>
+                </svg>
+            </div>
+            <h3>No connections yet</h3>
+            <p>Start building your network by connecting with others</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="connections-section" id="pending" style="display: none;">
+        <h2 class="section-title">
+            Pending Requests
+            <span class="badge">{{ pending_requests|length }}</span>
+        </h2>
+
+        {% if pending_requests %}
+        <div>
+            {% for request in pending_requests %}
+            <div class="connection-list-item">
+                <div class="profile-pic-container">
+                    {% if request.sender.profile.profile_pic %}
+                    <img src="{{ request.sender.profile.profile_pic.url }}" alt="Profile Picture">
+                    {% else %}
+                    <img src="https://placehold.co/80x80/EBF4FF/76839A?text=User" alt="Default Profile Picture">
+                    {% endif %}
+                </div>
+                <div class="connection-info">
+                    <div class="connection-name">{{ request.sender.get_full_name|default:request.sender.username }}</div>
+                    <p class="connection-title-text">
+                        {% if request.sender.profile.job_title %}
+                        {{ request.sender.profile.job_title }}
+                        {% if request.sender.profile.company %}
+                        at {{ request.sender.profile.company }}
+                        {% endif %}
+                        {% else %}
+                        Member since {{ request.sender.date_joined|date:"Y" }}
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="connection-actions">
+                    <a href="{% url 'profile_view' username=request.sender.username %}" class="btn-action btn-outline-primary">View Profile</a>
+                    <form method="post" action="{% url 'accept_connection_request' request.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-action btn-success">
+                            <i class="bi bi-check-circle me-2"></i> Accept
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                    <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+                </svg>
+            </div>
+            <h3>No pending requests</h3>
+            <p>You don't have any pending connection requests</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="connections-section" id="suggested" style="display: none;">
+        <h2 class="section-title">Suggested Connections</h2>
+
+        {% if suggested_connections %}
+        <div>
+            {% for user in suggested_connections %}
+            <a href="{% url 'profile_view' username=user.username %}" class="connection-list-item">
+                <div class="profile-pic-container">
+                    {% if user.profile.profile_pic %}
+                    <img src="{{ user.profile.profile_pic.url }}" alt="{{ user.username }}">
+                    {% else %}
+                    <img src="{% static 'images/default-avatar.png' %}" alt="Default Avatar">
+                    {% endif %}
+                </div>
+                <div class="connection-info">
+                    <div class="connection-name">{{ user.get_full_name|default:user.username }}</div>
+                    <p class="connection-title-text">
+                        {% if user.profile.job_title %}
+                        {{ user.profile.job_title }}
+                        {% if user.profile.company %}
+                        at {{ user.profile.company }}
+                        {% endif %}
+                        {% else %}
+                        Member since {{ user.date_joined|date:"Y" }}
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="connection-actions">
+                    <button class="btn-action btn-primary"
+                            onclick="window.location.href='{% url 'send_connection_request' user.username %}'">
+                        Connect
+                    </button>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
+                </svg>
+            </div>
+            <h3>No suggestions available</h3>
+            <p>We couldn't find any suggested connections at this time</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+<script src="{% static 'js/my_connections.js' %}"></script>
+{% endblock %}

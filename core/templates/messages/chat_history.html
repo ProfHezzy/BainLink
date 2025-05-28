@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Chat History{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chat-list-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        border-bottom: 1px solid #e9ecef;
+        transition: background-color 0.2s ease-in-out;
+        text-decoration: none;
+        color: var(--dark-text);
+    }
+
+    .chat-list-item:hover {
+        background-color: #f8f9fa;
+        color: var(--primary-color);
+    }
+
+    .chat-list-item .profile-pic img {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 1rem;
+        border: 2px solid var(--primary-color);
+    }
+
+    .chat-list-item .chat-info {
+        flex-grow: 1;
+    }
+
+    .chat-list-item .chat-name {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+
+    .chat-list-item .last-message {
+        font-size: 0.9rem;
+        color: var(--light-text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 300px; /* Adjust as needed */
+    }
+    
+    .chat-list-item.unread .chat-name,
+    .chat-list-item.unread .last-message {
+        font-weight: bold;
+        color: var(--dark-text);
+    }
+
+    .chat-list-item .chat-meta {
+        text-align: right;
+        min-width: 100px; /* Ensure space for time and badge */
+    }
+
+    .chat-list-item .timestamp {
+        font-size: 0.8rem;
+        color: var(--light-text);
+        margin-bottom: 0.25rem;
+    }
+
+    .chat-list-item .unread-badge {
+        background-color: var(--primary-color);
+        color: white;
+        font-size: 0.75rem;
+        padding: 0.2em 0.5em;
+        border-radius: 0.25rem;
+    }
+
+    .search-bar {
+        margin-bottom: 1.5rem;
+    }
+
+    .search-bar .form-control {
+        border-radius: 8px;
+    }
+    .search-bar .btn {
+        border-radius: 0 8px 8px 0;
+    }
+    .empty-chat {
+        text-align: center;
+        padding: 3rem 0;
+        color: var(--light-text);
+    }
+    .empty-chat i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: var(--accent-color);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Chat History</h2>
+        <a href="#" class="btn btn-primary"> <i class="bi bi-plus-circle me-1"></i> Start New Chat
+        </a>
+    </div>
+
+    <div class="search-bar">
+        <form method="GET" action=""> {# Or current page URL #}
+            <div class="input-group">
+                <input type="text" name="q" class="form-control" placeholder="Search chats by name..." value="{{ request.GET.q }}">
+                <button class="btn btn-outline-primary" type="submit">
+                    <i class="bi bi-search"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="card-body p-0">
+            {% if chat_sessions %}
+                {% for session in chat_sessions %}
+                <a href="{% url 'chat_view' session.other_user.username %}" class="chat-list-item {% if session.unread_count > 0 %}unread{% endif %}">
+                    <div class="profile-pic">
+                        <img src="{{ session.other_user.profile.profile_pic.url|default:'https://placehold.co/50x50/EBF4FF/76839A?text=User' }}" alt="{{ session.other_user.username }}">
+                    </div>
+                    <div class="chat-info">
+                        <div class="chat-name">{{ session.other_user.get_full_name|default:session.other_user.username }}</div>
+                        <div class="last-message">{{ session.last_message.content|truncatechars:40|default:"No messages yet" }}</div>
+                    </div>
+                    <div class="chat-meta">
+                        <div class="timestamp">{{ session.last_message.timestamp|timesince|default:"New" }} ago</div>
+                        {% if session.unread_count > 0 %}
+                            <span class="badge unread-badge">{{ session.unread_count }}</span>
+                        {% endif %}
+                    </div>
+                </a>
+                {% endfor %}
+            {% else %}
+                <div class="empty-chat p-4">
+                    <i class="bi bi-chat-dots"></i>
+                    <p class="h5">No chats yet.</p>
+                    <p>Start a conversation to see it here.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,230 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Explore{% endblock %}
+
+{% block extra_css %}
+<style>
+    .explore-section-title {
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid var(--primary-color);
+        display: inline-block;
+    }
+
+    .featured-card {
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        background-color: #fff;
+    }
+    .featured-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    }
+    .featured-card img.card-img-top {
+        height: 200px;
+        object-fit: cover;
+    }
+    .featured-card .card-body {
+        padding: 1.25rem;
+    }
+    .featured-card .card-title a {
+        color: var(--dark-text);
+        text-decoration: none;
+        font-weight: 600;
+    }
+    .featured-card .card-title a:hover {
+        color: var(--primary-color);
+    }
+    .featured-card .card-text {
+        font-size: 0.9rem;
+        color: var(--light-text);
+    }
+
+    .trending-topic-item, .latest-post-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #eee;
+        text-decoration: none;
+        color: var(--dark-text);
+    }
+    .trending-topic-item:last-child, .latest-post-item:last-child {
+        border-bottom: none;
+    }
+    .trending-topic-item:hover, .latest-post-item:hover {
+        background-color: #f8f9fa;
+    }
+    .trending-topic-item .icon-container, .latest-post-item .icon-container {
+        flex-shrink: 0;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: var(--accent-color-light, #e0f7fa); /* Define if needed or use primary */
+        color: var(--primary-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        font-size: 1.2rem;
+    }
+    .latest-post-item .profile-pic-sm {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 1rem;
+    }
+
+    .explore-search-bar {
+        margin-bottom: 2rem;
+        background-color: #fff;
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.07);
+    }
+    .explore-search-bar .form-control {
+        border-radius: 8px;
+        padding: 0.75rem 1rem; /* Larger padding for prominence */
+    }
+    .explore-search-bar .btn {
+        padding: 0.75rem 1.5rem;
+    }
+    .nav-tabs .nav-link {
+        font-weight: 500;
+        color: var(--light-text);
+    }
+    .nav-tabs .nav-link.active {
+        color: var(--primary-color);
+        border-color: var(--primary-color) var(--primary-color) #fff;
+        border-bottom-width: 2px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="explore-search-bar text-center">
+        <h2 class="mb-3">What are you looking for?</h2>
+        <form method="GET" action="{% url 'search_results_page' %}"> {# Replace with your global search results URL #}
+            <div class="input-group input-group-lg">
+                <input type="text" name="q_global" class="form-control" placeholder="Search projects, people, discussions..." value="{{ request.GET.q_global }}">
+                <button class="btn btn-primary" type="submit">
+                    <i class="bi bi-search me-1"></i> Explore
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <ul class="nav nav-tabs mb-4" id="exploreTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="featured-tab" data-bs-toggle="tab" data-bs-target="#featured-content" type="button" role="tab" aria-controls="featured-content" aria-selected="true">
+                <i class="bi bi-star-fill me-1"></i> Featured
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="trending-tab" data-bs-toggle="tab" data-bs-target="#trending-topics" type="button" role="tab" aria-controls="trending-topics" aria-selected="false">
+                <i class="bi bi-graph-up me-1"></i> Trending
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="latest-tab" data-bs-toggle="tab" data-bs-target="#latest-posts" type="button" role="tab" aria-controls="latest-posts" aria-selected="false">
+                <i class="bi bi-newspaper me-1"></i> Latest Posts
+            </button>
+        </li>
+         <li class="nav-item" role="presentation">
+            <button class="nav-link" id="new-users-tab" data-bs-toggle="tab" data-bs-target="#newly-joined" type="button" role="tab" aria-controls="newly-joined" aria-selected="false">
+                <i class="bi bi-person-plus-fill me-1"></i> New Members
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="exploreTabContent">
+        <div class="tab-pane fade show active" id="featured-content" role="tabpanel" aria-labelledby="featured-tab">
+            <h3 class="explore-section-title">Featured Projects & Challenges</h3>
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                {% for item in featured_items %} {# Assuming featured_items is a mixed list or specific featured challenges/projects #}
+                <div class="col">
+                    <div class="card featured-card h-100">
+                        <img src="{{ item.image_url|default:'https://placehold.co/600x400/4CC9F0/FFFFFF?text='|add:item.title|slugify }}" class="card-img-top" alt="{{ item.title }}">
+                        <div class="card-body">
+                            <h5 class="card-title"><a href="{{ item.get_absolute_url }}">{{ item.title }}</a></h5>
+                            <p class="card-text">{{ item.short_description|truncatewords:15 }}</p>
+                            <span class="badge bg-light text-dark border me-2">{{ item.type|default:'Project' }}</span> {# e.g., Project, Challenge, Article #}
+                            <a href="{{ item.get_absolute_url }}" class="btn btn-sm btn-outline-primary mt-2">Learn More <i class="bi bi-arrow-right-short"></i></a>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <p class="text-muted text-center p-3">No featured content at the moment. Check back soon!</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="trending-topics" role="tabpanel" aria-labelledby="trending-tab">
+            <h3 class="explore-section-title">Trending Discussions</h3>
+            <div class="card">
+                <div class="list-group list-group-flush">
+                    {% for topic in trending_topics %} {# Assuming trending_topics in context #}
+                    <a href="{% url 'discussion_detail' topic.slug %}" class="list-group-item trending-topic-item">
+                        <div class="icon-container bg-info-light"> {# Custom class for lighter bg #}
+                            <i class="bi bi-chat-left-text-fill"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0">{{ topic.title }}</h6>
+                            <small class="text-muted">{{ topic.participant_count }} participants &middot; {{ topic.post_count }} posts</small>
+                        </div>
+                    </a>
+                    {% empty %}
+                    <div class="list-group-item text-muted text-center p-3">No trending discussions right now.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="latest-posts" role="tabpanel" aria-labelledby="latest-tab">
+            <h3 class="explore-section-title">Latest Community Posts</h3>
+            <div class="card">
+                 <div class="list-group list-group-flush">
+                    {% for post in latest_posts %} {# Assuming latest_posts in context #}
+                    <a href="{% url 'post_detail' post.slug %}" class="list-group-item latest-post-item">
+                        <img src="{{ post.author.profile.profile_pic.url|default:'https://placehold.co/40x40/EBF4FF/76839A?text=P' }}" alt="{{ post.author.username }}" class="profile-pic-sm">
+                        <div>
+                            <h6 class="mb-0">{{ post.title|truncatechars:60 }}</h6>
+                            <small class="text-muted">By {{ post.author.get_full_name|default:post.author.username }} &middot; {{ post.created_at|timesince }} ago</small>
+                        </div>
+                    </a>
+                    {% empty %}
+                    <div class="list-group-item text-muted text-center p-3">No recent posts. Be the first to share something!</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-pane fade" id="newly-joined" role="tabpanel" aria-labelledby="new-users-tab">
+            <h3 class="explore-section-title">Welcome New Members</h3>
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+                {% for member in new_members %} {# Assuming new_members in context #}
+                <div class="col">
+                    <div class="card text-center p-3 h-100">
+                        <img src="{{ member.profile.profile_pic.url|default:'https://placehold.co/80x80/76839A/FFFFFF?text='|add:member.username|first }}" class="rounded-circle mx-auto mb-2" alt="{{ member.username }}" width="80" height="80" style="object-fit:cover; border: 2px solid var(--accent-color);">
+                        <h6 class="mb-0"><a href="{% url 'profile_view' member.username %}" class="text-decoration-none">{{ member.get_full_name|default:member.username }}</a></h6>
+                        <small class="text-muted">{{ member.profile.headline|truncatechars:40|default:"New to BrainLink!" }}</small>
+                        <a href="{% url 'profile_view' member.username %}" class="btn btn-sm btn-outline-secondary mt-2">View Profile</a>
+                    </div>
+                </div>
+                {% empty %}
+                 <div class="col-12">
+                    <p class="text-muted text-center p-3">No new members to show right now.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

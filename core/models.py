@@ -136,12 +136,15 @@ class Profile(models.Model):
         # If 'Connection' is used to represent followers, this logic would be correct.
         return Connection.objects.filter(friend=self, accepted=True).count()
 
+    
+
     def get_connections(self):
         # Returns all established connections (both where current profile is creator or friend)
         return Profile.objects.filter(
             Q(created_connections__friend=self, created_connections__accepted=True) |
             Q(friend_connections__creator=self, friend_connections__accepted=True)
         ).distinct()
+    
 
     def get_pending_requests(self):
         # This will now refer to ConnectionRequest model directly, as it handles pending state
@@ -160,6 +163,17 @@ class Profile(models.Model):
     def get_skills_display(self):
         """Returns a comma-separated string of the profile's skills."""
         return ", ".join([skill.name for skill in self.skills.all()])
+    
+    def get_suggested_connects(self, limit=10):
+        """Returns a queryset of suggested User objects for this profile."""
+        connected_user_ids = self.connections.values_list('user_id', flat=True)
+        pending_sent_request_receiver_ids = self.user.sent_connection_requests.filter(status='pending').values_list('receiver_id', flat=True)
+        pending_received_request_sender_ids = self.user.received_connection_requests.filter(status='pending').values_list('sender_id', flat=True)
+
+        exclude_ids = list(connected_user_ids) + list(pending_sent_request_receiver_ids) + list(pending_received_request_sender_ids) + [self.user.id]
+
+        suggested_users = User.objects.exclude(id__in=exclude_ids).filter(profile__isnull=False).order_by('?')[:limit]
+        return suggested_users.select_related('profile')
     
 
 class Connection(models.Model):
@@ -311,7 +325,7 @@ class Comment(models.Model):
     
     def __str__(self):
         return f"Comment by {self.user.user.username} on {self.post.title}"
-
+    
 
 # Your Message model
 class Message(models.Model):

@@ -13,14 +13,12 @@ from .views import (
     login_view, register_view, home_view,
     profile_view, edit_profile, projects_view, add_project, edit_project, delete_project,
     posts_list_view, create_post_view, post_detail_view, # 'create_post' is now 'create_post_view'
-    challenge_detail_view,
-    logout_view,
-    send_connection_request, remove_connection, chat_view, # Added remove_connection
+    challenge_detail_view, logout_view, send_connection_request, remove_connection, chat_view, # Added remove_connection
     accept_connection_request, reject_connection_request, connections_view
     , message_list_view, message_detail_view, delete_message, # Renamed message_list and message_detail
     all_notifications, view_notification,
     system_dashboard, user_management, edit_user, content_review, approve_post, system_settings, # Added edit_user, approve_post
-    get_messages, send_message_api
+    get_messages, send_message_api, chat_list_history, like_post, unlike_post, add_comment, view_all_comments
 )
 
 urlpatterns = [
@@ -60,6 +58,15 @@ urlpatterns = [
     path('messages/<int:message_id>/', login_required(message_detail_view), name='message_detail_view'), # Renamed for consistency
     path('messages/<int:message_id>/delete/', login_required(delete_message), name='delete_message'),
     path('message/<str:username>/', chat_view, name='chat_view'),
+    path('messages/', chat_list_history, name='chat_list_history'),
+
+    # Post Action URLs
+    path('like/<int:post_id>/', like_post, name='like_post'),
+    path('unlike/<int:post_id>/', unlike_post, name='unlike_post'),
+    path('comment/<int:post_id>/', add_comment, name='add_comment'),
+    path('comments/<int:post_id>/all/', view_all_comments, name='view_all_comments'),
+
+
     # Add/Confirm this API URL for fetching messages
     path('api/messages/<str:recipient_username>/', get_messages, name='api_get_messages'),
     path('api/messages/<str:recipient_username>/send/', send_message_api, name='api_send_message'),

@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Challenges{% endblock %}
+
+{% block extra_css %}
+<style>
+    .challenge-card {
+        background-color: #fff;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.07);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        height: 100%; /* Ensure cards in a row have same height */
+    }
+
+    .challenge-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    }
+
+    .challenge-card .card-img-top {
+        height: 180px;
+        object-fit: cover;
+        border-top-left-radius: 12px;
+        border-top-right-radius: 12px;
+    }
+
+    .challenge-card .card-body {
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1; /* Allows footer to stick to bottom */
+    }
+
+    .challenge-card .card-title {
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+    }
+
+    .challenge-card .card-text {
+        font-size: 0.9rem;
+        color: var(--light-text);
+        margin-bottom: 1rem;
+        flex-grow: 1; /* Pushes footer down */
+    }
+    
+    .challenge-card .challenge-meta {
+        font-size: 0.85rem;
+        margin-bottom: 1rem;
+    }
+    .challenge-card .challenge-meta span {
+        margin-right: 10px;
+    }
+    .challenge-card .challenge-meta .badge {
+        font-size: 0.8rem;
+    }
+
+    .challenge-card .card-footer {
+        background-color: transparent;
+        border-top: 1px solid #f0f0f0;
+        padding: 1rem 1.25rem;
+    }
+
+    .filters-sidebar .card-header {
+        background-color: var(--primary-color);
+        color: white;
+        font-weight: 500;
+        border-radius: 8px 8px 0 0;
+    }
+    .filters-sidebar .list-group-item {
+        border-left: none;
+        border-right: none;
+        padding: 0.75rem 1rem;
+    }
+    .filters-sidebar .list-group-item:first-child {
+        border-top-left-radius: 0;
+        border-top-right-radius: 0;
+    }
+    .filters-sidebar .form-check-label {
+        font-size: 0.9rem;
+    }
+    .filters-sidebar .form-range {
+        padding-left: 0; /* Align with checkboxes */
+    }
+    .empty-challenges {
+        text-align: center;
+        padding: 3rem 0;
+        color: var(--light-text);
+    }
+    .empty-challenges i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: var(--accent-color);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Discover Challenges</h2>
+        <a href="#" class="btn btn-primary"> {/* Replace with {% url 'suggest_challenge' %} or similar */}
+            <i class="bi bi-lightbulb me-1"></i> Suggest a Challenge
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-3 mb-4">
+            <div class="card filters-sidebar">
+                <div class="card-header">
+                    <i class="bi bi-filter me-2"></i>Filters
+                </div>
+                <form method="GET" action="">
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item">
+                            <label for="searchQuery" class="form-label fw-bold">Search</label>
+                            <input type="text" name="q" id="searchQuery" class="form-control form-control-sm" placeholder="Challenge name..." value="{{ request.GET.q }}">
+                        </div>
+
+                        <div class="list-group-item">
+                            <h6 class="fw-bold mb-2">Category</h6>
+                            {% for category in categories %} {# Assuming 'categories' is passed in context #}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="category" value="{{ category.slug }}" id="cat_{{ category.slug }}" {% if category.slug in request.GET.getlist.category %}checked{% endif %}>
+                                <label class="form-check-label" for="cat_{{ category.slug }}">
+                                    {{ category.name }}
+                                </label>
+                            </div>
+                            {% empty %}
+                            <small class="text-muted">No categories available.</small>
+                            {% endfor %}
+                        </div>
+
+                        <div class="list-group-item">
+                            <h6 class="fw-bold mb-2">Difficulty</h6>
+                            {% for level in difficulty_levels %} {# Assuming 'difficulty_levels' is passed in context e.g., ['Easy', 'Medium', 'Hard'] #}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="difficulty" value="{{ level|slugify }}" id="diff_{{ level|slugify }}" {% if level|slugify in request.GET.getlist.difficulty %}checked{% endif %}>
+                                <label class="form-check-label" for="diff_{{ level|slugify }}">
+                                    {{ level }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="list-group-item">
+                            <h6 class="fw-bold mb-2">Status</h6>
+                             <div class="form-check">
+                                <input class="form-check-input" type="radio" name="status" value="active" id="status_active" {% if request.GET.status == 'active' %}checked{% endif %}>
+                                <label class="form-check-label" for="status_active">Active</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="status" value="upcoming" id="status_upcoming" {% if request.GET.status == 'upcoming' %}checked{% endif %}>
+                                <label class="form-check-label" for="status_upcoming">Upcoming</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="status" value="completed" id="status_completed" {% if request.GET.status == 'completed' %}checked{% endif %}>
+                                <label class="form-check-label" for="status_completed">Completed</label>
+                            </div>
+                             <div class="form-check">
+                                <input class="form-check-input" type="radio" name="status" value="" id="status_all" {% if not request.GET.status %}checked{% endif %}>
+                                <label class="form-check-label" for="status_all">All</label>
+                            </div>
+                        </div>
+
+                        <div class="list-group-item text-center p-3">
+                            <button type="submit" class="btn btn-sm btn-primary w-100">Apply Filters</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-lg-9">
+            {% if challenges %}
+            <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+                {% for challenge in challenges %}
+                <div class="col">
+                    <div class="card challenge-card">
+                        <img src="{{ challenge.image_url|default:'https://placehold.co/600x400/4361EE/FFFFFF?text='|add:challenge.title|slugify }}" class="card-img-top" alt="{{ challenge.title }}">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ challenge.title }}</h5>
+                            <p class="card-text">{{ challenge.short_description|truncatewords:20 }}</p>
+                            <div class="challenge-meta">
+                                <span class="badge bg-secondary">{{ challenge.category.name|default:'General' }}</span>
+                                <span class="badge 
+                                    {% if challenge.difficulty == 'Easy' %}bg-success
+                                    {% elif challenge.difficulty == 'Medium' %}bg-warning text-dark
+                                    {% elif challenge.difficulty == 'Hard' %}bg-danger
+                                    {% else %}bg-info
+                                    {% endif %}">
+                                    {{ challenge.difficulty|default:'N/A' }}
+                                </span>
+                                <span><i class="bi bi-people-fill"></i> {{ challenge.participants_count|default:0 }} Joined</span>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                             <a href="{% url 'challenge_detail' challenge.slug %}" class="btn btn-primary w-100">
+                                View Challenge <i class="bi bi-arrow-right-short"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+                <div class="empty-challenges">
+                    <i class="bi bi-trophy"></i>
+                    <p class="h5">No challenges match your criteria.</p>
+                    <p>Try adjusting your filters or check back later for new challenges.</p>
+                </div>
+            {% endif %}
+
+            {% if challenges.has_other_pages %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if challenges.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page={{ challenges.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Previous</a></li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">Previous</span></li>
+                    {% endif %}
+
+                    {% for i in challenges.paginator.page_range %}
+                    {% if challenges.number == i %}
+                    <li class="page-item active" aria-current="page"><span class="page-link">{{ i }}</span></li>
+                    {% else %}
+                    <li class="page-item"><a class="page-link" href="?page={{ i }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ i }}</a></li>
+                    {% endif %}
+                    {% endfor %}
+
+                    {% if challenges.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ challenges.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Next</a></li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">Next</span></li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+{% endblock %}
