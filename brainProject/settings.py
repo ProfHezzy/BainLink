@@ -20,7 +20,7 @@ SECRET_KEY = 'django-insecure-@bq_i3os84s^mw)9p80pjv0zgz-0ow_95v(7$+0hqgkt)6pcej
 # Production configs via environment variables
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-temp-key')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost,brainlink-1.onrender.com').split(',')
 
 
 # Application definition
