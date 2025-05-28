@@ -26,11 +26,20 @@ class CustomUserCreationForm(UserCreationForm):
             'username': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Exclude sensitive roles from the dropdown
+        excluded_roles = ['Admin', 'Superuser', 'Super Super User']
+        self.fields['role'].choices = [
+            choice for choice in User.USER_ROLES if choice[0] not in excluded_roles
+        ]
+
     def clean_email(self):
         email = self.cleaned_data.get('email')
         if User.objects.filter(email=email).exists():
             raise ValidationError("This email is already in use.")
         return email
+
 
 class CustomUserChangeForm(UserChangeForm):
     class Meta:

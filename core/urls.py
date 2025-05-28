@@ -24,7 +24,6 @@ from .views import (
 urlpatterns = [
     # Root URL redirects to login
     path('', lambda request: redirect('login/')), # Using 'login/' ensures the trailing slash is handled consistently
-    path('admin/', admin.site.urls),
 
     # Authentication URLs
     path('login/', login_view, name='login'),
