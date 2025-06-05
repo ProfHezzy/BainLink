@@ -12,7 +12,7 @@ _ALLOWED_HOSTS_DEV = ['127.0.0.1', 'localhost']
 
 SECRET_KEY = os.getenv('SECRET_KEY', _SECRET_KEY_DEV)
 #DEBUG = os.getenv('DEBUG', str(_DEBUG_DEV)).lower() == 'true'
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost,https://brainlink-r97s.onrender.com').split(',')
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost,brainlink-r97s.onrender.com').split(',')
 
 
 if DEBUG:
