@@ -1,0 +1,59 @@
+.chat-card {
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.chat-card:hover {
+    transform: scale(1.02);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.05);
+}
+
+.chat-card .card-body {
+    padding: 1rem;
+}
+
+.chat-card .card-link {
+    text-decoration: none;
+    color: inherit;
+    display: block; /* Make the entire card clickable */
+    height: 100%;
+}
+
+.chat-card .card-title {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.chat-card .last-message {
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.chat-card .unread-badge {
+    font-weight: bold;
+}
+
+.profile-pic img {
+    border: 2px solid var(--primary-color);
+}
+
+.search-bar {
+    margin-bottom: 1.5rem;
+}
+
+.search-bar .form-control {
+    border-radius: 8px 0 0 8px;
+}
+
+.search-bar .btn {
+    border-radius: 0 8px 8px 0;
+}
+
+.empty-chat i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: var(--accent-color);
+}

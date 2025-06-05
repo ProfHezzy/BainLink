@@ -230,30 +230,28 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         console.log('Sending message with content:', content, 'and file:', selectedFile);
 
-        messageInput.value = ''; // Clear input immediately for responsiveness
-        messageInput.style.height = 'auto'; // Reset textarea height
-        clearAttachmentPreview(); // Clear UI feedback for attachment
+        messageInput.value = '';
+        messageInput.style.height = 'auto';
 
-        const formData = new FormData(); // Use FormData for file uploads
-        formData.append('content', content); // Append content (can be empty string)
+        const formData = new FormData();
+        formData.append('content', content);
         if (selectedFile) {
-            formData.append('file', selectedFile); // Append the file
-            selectedFile = null; // Clear selected file after adding to form data
+            formData.append('file', selectedFile);
         }
 
         try {
             const response = await fetch(API_SEND_MESSAGE_URL, {
                 method: 'POST',
                 headers: {
-                    // 'Content-Type': 'application/json', <-- DO NOT SET THIS FOR FormData
-                    'X-CSRFToken': csrfToken, // Important for Django's CSRF protection
+                    'X-CSRFToken': csrfToken,
                 },
-                body: formData, // Send FormData
+                body: formData,
             });
             console.log('Send message fetch response received:', response);
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
+                alert('Failed to send message: ' + (errorData.error || response.statusText));
                 throw new Error(`HTTP error! Status: ${response.status}. Server response: ${JSON.stringify(errorData)}`);
             }
 
@@ -274,6 +272,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('Updated lastMessageTimestamp after sending:', lastMessageTimestamp);
             }
 
+            clearAttachmentPreview(); // <-- Move here, after successful send
         } catch (error) {
             console.error('Error sending message:', error);
             alert('Failed to send message. Please try again.');

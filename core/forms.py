@@ -15,7 +15,7 @@ class CustomUserCreationForm(UserCreationForm):
         'class': 'form-control',
         'placeholder': 'Your email address'
     }))
-    role = forms.ChoiceField(choices=User.USER_ROLES, widget=forms.Select(attrs={
+    role = forms.ChoiceField(widget=forms.Select(attrs={
         'class': 'form-select'
     }))
 
@@ -28,11 +28,11 @@ class CustomUserCreationForm(UserCreationForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Exclude sensitive roles from the dropdown
-        excluded_roles = ['Admin', 'Superuser', 'Super Super User']
-        self.fields['role'].choices = [
-            choice for choice in User.USER_ROLES if choice[0] not in excluded_roles
-        ]
+        if 'role' in self.fields:
+            self.fields['role'].choices = [
+                (value, label) for value, label in User.USER_ROLES
+                if value not in ['admin', 'super', 'super_super']
+            ]
 
     def clean_email(self):
         email = self.cleaned_data.get('email')

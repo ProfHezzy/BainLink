@@ -1,0 +1,162 @@
+/* static/css/chat.css */
+
+/* Chat container and header (adjust as needed) */
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh; /* Full viewport height */
+    max-width: 800px; /* Or your preferred max width */
+    margin: 0 auto;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden; /* To ensure child elements like chat-messages respect bounds */
+}
+
+.chat-header {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    background-color: #f8f9fa; /* Light background */
+    border-bottom: 1px solid #eee;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.chat-header .back-link {
+    font-size: 1.8rem;
+    color: #007bff;
+    margin-right: 10px;
+}
+
+.chat-header .user-info {
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+}
+
+.chat-header .user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 10px;
+    object-fit: cover; /* Ensures image covers the area */
+}
+
+.chat-header .user-name {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.chat-header .status {
+    font-size: 0.8rem;
+    color: #28a745; /* Green for online */
+}
+
+.chat-header .chat-actions .btn-icon {
+    background: none;
+    border: none;
+    font-size: 1.4rem;
+    color: #6c757d;
+    cursor: pointer;
+    margin-left: 10px;
+}
+
+/* Chat Messages Area */
+.chat-messages {
+    flex-grow: 1; /* Allows it to take available space */
+    overflow-y: auto; /* Enables scrolling */
+    display: flex;
+    flex-direction: column-reverse; /* CRITICAL: New messages visually appear at bottom with prepend */
+    padding: 10px;
+    background-color: #e5ddd5; /* Light chat background */
+}
+
+/* Loading spinner */
+.messages-loading {
+    padding: 20px;
+}
+
+/* Message Bubble Styling */
+.message-bubble {
+    max-width: 70%; /* Limit message bubble width */
+    padding: 8px 12px;
+    border-radius: 18px; /* Rounded corners */
+    margin-bottom: 8px; /* Space between messages */
+    word-wrap: break-word; /* Break long words */
+    white-space: pre-wrap; /* Preserve whitespace and breaks */
+    font-size: 0.95rem;
+}
+
+/* Sent Messages (Right-aligned, different color) */
+.message-bubble.sent {
+    align-self: flex-end; /* Pushes to the right */
+    background-color: #dcf8c6; /* Greenish background for sent */
+    color: #333;
+    border-bottom-right-radius: 4px; /* Slightly less round on one corner for the "tail" effect */
+}
+
+/* Received Messages (Left-aligned, different color) */
+.message-bubble.received {
+    align-self: flex-start; /* Pushes to the left */
+    background-color: #fff; /* White background for received */
+    color: #333;
+    border-bottom-left-radius: 4px; /* Slightly less round on one corner */
+}
+
+/* Message Timestamp Styling */
+.message-timestamp {
+    font-size: 0.7rem;
+    color: #666;
+    margin-top: 2px; /* Space between content and timestamp */
+}
+
+/* Input Area */
+.message-input-area {
+    display: flex;
+    align-items: flex-end; /* Align items to the bottom, especially textarea */
+    padding: 10px 15px;
+    background-color: #f8f9fa;
+    border-top: 1px solid #eee;
+}
+
+.message-textarea {
+    flex-grow: 1; /* Takes up most space */
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    padding: 10px 15px;
+    font-size: 1rem;
+    resize: none; /* Disable manual resizing */
+    min-height: 40px; /* Minimum height */
+    max-height: 120px; /* Max height before scrolling inside textarea */
+    overflow-y: auto; /* Scroll if content exceeds max-height */
+    margin-right: 10px;
+}
+
+.message-input-area .btn-icon,
+.message-input-area .send-button {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #007bff; /* Primary blue for icons */
+    cursor: pointer;
+    padding: 0;
+    line-height: 1; /* Adjust for vertical alignment */
+}
+
+.message-input-area .send-button {
+    font-size: 1.8rem; /* Make send button slightly larger */
+    margin-left: 5px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .chat-container {
+        height: calc(100vh - 80px);
+        border-radius: 0;
+    }
+    
+    .message {
+        max-width: 85%;
+    }
+}

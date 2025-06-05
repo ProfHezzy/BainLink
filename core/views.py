@@ -65,26 +65,36 @@ def register_view(request):
     """
     Handles new user registration. Redirects authenticated users to 'posts'.
     Creates a new user, logs them in, and redirects to 'posts' on success.
+    Excludes admin, super, and super_super roles from registration.
     """
     if request.user.is_authenticated:
         return redirect('posts_list') # Redirect to posts_list, consistent with other views
 
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
+        # Remove admin/super/super_super roles from the form's choices before validation
+        if 'role' in form.fields:
+            form.fields['role'].choices = [
+                (value, label) for value, label in form.fields['role'].choices
+                if value not in ['admin', 'super', 'super_super']
+            ]
         if form.is_valid():
             user = form.save()
-            # Django's UserCreationForm handles password hashing correctly.
-            # No need to call authenticate again unless there's a specific post-save step that modifies password.
             login(request, user) # Log in the newly created user
             messages.success(request, f'Account created for {user.username} successfully!')
-            return redirect('posts_list') # Redirect to posts_list
+            return redirect('posts_list')
         else:
-            # Add form errors to messages
             for field, errors in form.errors.items():
                 for error in errors:
                     messages.error(request, f"{field.replace('_', ' ').capitalize()}: {error}")
     else:
         form = CustomUserCreationForm()
+        # Remove admin/super/super_super roles from the form's choices for GET
+        if 'role' in form.fields:
+            form.fields['role'].choices = [
+                (value, label) for value, label in form.fields['role'].choices
+                if value not in ['admin', 'super', 'super_super']
+            ]
 
     return render(request, 'registration/register.html', {'form': form})
 
@@ -743,7 +753,6 @@ def get_messages(request, recipient_username):
 
 
 @login_required
-# @csrf_exempt # Keep this commented out if you're correctly sending CSRF token from JS
 def send_message_api(request, recipient_username):
     """
     Handles sending new chat messages, including text content and file attachments.
@@ -757,7 +766,7 @@ def send_message_api(request, recipient_username):
         # --- END IMPORTANT DEBUGGING LOGS ---
 
         content = request.POST.get('content', '').strip()
-        uploaded_file = request.FILES.get('file') # 'file' is the name of the FormData key
+        uploaded_file = request.FILES.get('file')  # 'file' is the name of the FormData key
 
         logger.debug(f"Content extracted: '{content}', Uploaded File extracted: {uploaded_file}")
 
@@ -779,45 +788,65 @@ def send_message_api(request, recipient_username):
             'content': content,
         }
 
-        # Handle file attachment if present
-        if uploaded_file:
-            message_fields['file'] = uploaded_file
-            message_fields['file_name'] = uploaded_file.name
-            message_fields['file_type'] = uploaded_file.content_type
-            logger.debug(f"File details added to message_fields: Name={uploaded_file.name}, Type={uploaded_file.content_type}, Size={uploaded_file.size} bytes")
-
         try:
+            # Handle file attachment if present
+            if uploaded_file:
+                message_fields['file'] = uploaded_file
+                message_fields['file_name'] = uploaded_file.name
+                message_fields['file_type'] = uploaded_file.content_type
+                logger.debug(f"File details added to message_fields: Name={uploaded_file.name}, Type={uploaded_file.content_type}, Size={uploaded_file.size} bytes")
+
             new_message = Message.objects.create(**message_fields)
             logger.info(f"Message ID {new_message.id} created successfully by {request.user.username} to {recipient.username}.")
+
+            # Prepare response data for the newly created message
+            response_data = {
+                'id': new_message.id,
+                'sender_username': new_message.sender.username,
+                'content': new_message.content,
+                'timestamp': new_message.timestamp.isoformat(),
+            }
+
+            # Add file-related fields to response if a file was attached
+            if new_message.file:
+                response_data['file_url'] = new_message.file.url if new_message.file else None
+                response_data['file_name'] = new_message.file_name
+                response_data['file_type'] = new_message.file_type
+                response_data['is_image'] = new_message.file_type and new_message.file_type.startswith('image/')
+                response_data['is_video'] = new_message.file_type and new_message.file_type.startswith('video/')
+                response_data['is_audio'] = new_message.file_type and new_message.file_type.startswith('audio/')
+                response_data['is_document'] = new_message.file_type and (
+                    new_message.file_type in [
+                        'application/pdf',
+                        'application/msword',
+                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                        'application/vnd.ms-excel',
+                        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                        'text/plain',
+                        'application/zip',
+                        'application/x-rar-compressed',
+                        'application/vnd.rar',
+                        'application/x-7z-compressed',
+                    ]
+                )
+                logger.debug(f"Response data includes file URL: {response_data['file_url']}")
+
+            logger.debug(f"Sending JSON response for message ID: {new_message.id}")
+            return JsonResponse(response_data, status=201)
+
         except Exception as e:
-            logger.exception(f"Error creating message in DB: {e}") # Use exception for full traceback
-            return JsonResponse({'error': 'Failed to save message'}, status=500)
+            import traceback
+            tb = traceback.format_exc()
+            logger.exception(f"Error creating message in DB: {e}")
+            return JsonResponse({
+                'error': 'Failed to save message',
+                'exception': str(e),
+                'traceback': tb,
+            }, status=500)
 
-        # Prepare response data for the newly created message
-        response_data = {
-            'id': new_message.id,
-            'sender_username': new_message.sender.username,
-            'content': new_message.content,
-            'timestamp': new_message.timestamp.isoformat(),
-        }
-
-        # Add file-related fields to response if a file was attached
-        if new_message.file:
-            response_data['file_url'] = new_message.file_url
-            response_data['file_name'] = new_message.file_name
-            response_data['file_type'] = new_message.file_type
-            response_data['is_image'] = new_message.is_image
-            response_data['is_video'] = new_message.is_video
-            response_data['is_audio'] = new_message.is_audio
-            response_data['is_document'] = new_message.is_document
-            logger.debug(f"Response data includes file URL: {new_message.file_url}")
-
-        logger.debug(f"Sending JSON response for message ID: {new_message.id}")
-        return JsonResponse(response_data, status=201)
     else:
         logger.warning(f"Invalid request method for send_message_api: {request.method}")
         return JsonResponse({'error': 'Invalid request method'}, status=405)
-
 
 
 @login_required
@@ -862,18 +891,18 @@ def message_list_view(request):
 
 
 
-from django.db.models import Q, Max, Count
+from django.db.models import Q, Max
+from django.contrib.auth.decorators import login_required
+
 @login_required
-def chat_list_history(request, username):
+def chat_list_history(request):
     current_user = request.user
 
     # Get all messages involving the current user
     messages = Message.objects.filter(Q(sender=current_user) | Q(recipient=current_user))
 
     # Get unique conversation partners based on latest message timestamp
-    latest_messages = messages.values(
-        'sender', 'recipient'
-    ).annotate(
+    latest_messages = messages.values('sender', 'recipient').annotate(
         last_message_time=Max('timestamp')
     ).order_by('-last_message_time')
 

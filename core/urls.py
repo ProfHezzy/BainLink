@@ -53,7 +53,7 @@ urlpatterns = [
     path('reject-connection/<int:request_id>/', reject_connection_request, name='reject_connection_request'),
 
     # Messaging URLs
-    path('messages/', login_required(message_list_view), name='message_list_view'), # Renamed for consistency
+    path('messages/', chat_list_history, name='message_list_view'),
     path('messages/<int:message_id>/', login_required(message_detail_view), name='message_detail_view'), # Renamed for consistency
     path('messages/<int:message_id>/delete/', login_required(delete_message), name='delete_message'),
     path('message/<str:username>/', chat_view, name='chat_view'),

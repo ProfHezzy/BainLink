@@ -3,7 +3,7 @@
 {% block title %}{{ profile_user.username }} - Profile | BrainProject{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/profile.css' %}">
+<link rel="stylesheet" href="{% static 'css/profile.css' %}?v={{ timestamp }}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 {% endblock %}
 
@@ -27,10 +27,10 @@
         
         <div class="profile-info">
             <div class="profile-pic-container">
-                {% if profile_user.profile.profile_pic %}
-                <img src="{{ profile_user.profile.profile_pic.url }}" class="profile-pic" alt="Profile picture">
+                {% if user.profile.profile_pic %}
+                <img src="{{ user.profile.profile_pic.url }}" class="profile-pic" alt="Profile">
                 {% else %}
-                <img src="{% static 'images/default-profile.jpg' %}" class="profile-pic" alt="Profile picture">
+                <img src="{% static 'images/default-profile.jpg' %}" class="profile-pic" alt="Profile">
                 {% endif %}
                 
                 {% if request.user == profile_user %}
