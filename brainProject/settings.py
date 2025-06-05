@@ -6,11 +6,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # --- Security and Environment ---
 _SECRET_KEY_DEV = 'django-insecure-@bq_i3os84s^mw)9p80pjv0zgz-0ow_95v(7$+0hqgkt)6pcej'
-_DEBUG_DEV = True
+#_DEBUG_DEV = True
+DEBUG = False
 _ALLOWED_HOSTS_DEV = ['127.0.0.1', 'localhost']
 
 SECRET_KEY = os.getenv('SECRET_KEY', _SECRET_KEY_DEV)
-DEBUG = os.getenv('DEBUG', str(_DEBUG_DEV)).lower() == 'true'
+#DEBUG = os.getenv('DEBUG', str(_DEBUG_DEV)).lower() == 'true'
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', ','.join(_ALLOWED_HOSTS_DEV)).split(',')
 
 if DEBUG:
@@ -86,6 +87,8 @@ USE_TZ = True
 # --- Static and Media files ---
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles_collected'
+#STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
     BASE_DIR / 'core' / 'static',
